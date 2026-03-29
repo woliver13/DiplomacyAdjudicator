@@ -1,0 +1,436 @@
+{
+  "_source": "diplomacy/diplomacy standard.map (GitHub), DATC-compliant",
+  "_notes": [
+    "armyAdjacencies: land provinces only, bicoastal provinces use base code (spa not spa_nc)",
+    "fleetAdjacencies: sea and coastal provinces, bicoastal provinces use coast variant (spa_nc, spa_sc)",
+    "Switzerland (swi) is impassable — excluded from all adjacency lists",
+    "Syria (syr) is present in the standard 2000 map"
+  ],
+  "supplyCenters": [
+    "ank", "bel", "ber", "bre", "bud", "bul", "con", "den", "edi",
+    "gre", "hol", "kie", "lon", "lvp", "mar", "mos", "mun", "nap",
+    "nwy", "par", "por", "rom", "rum", "ser", "sev", "smy", "spa",
+    "stp", "swe", "tri", "tun", "ven", "vie", "war"
+  ],
+  "homeCenters": {
+    "austria": [ "bud", "tri", "vie" ],
+    "england": [ "edi", "lon", "lvp" ],
+    "france":  [ "bre", "mar", "par" ],
+    "germany": [ "ber", "kie", "mun" ],
+    "italy":   [ "nap", "rom", "ven" ],
+    "russia":  [ "mos", "sev", "stp", "war" ],
+    "turkey":  [ "ank", "con", "smy" ]
+  },
+  "provinces": {
+    "adr": {
+      "name": "Adriatic Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["alb", "apu", "ion", "tri", "ven"]
+    },
+    "aeg": {
+      "name": "Aegean Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bul_sc", "con", "eas", "gre", "ion", "smy"]
+    },
+    "alb": {
+      "name": "Albania", "type": "coast",
+      "armyAdjacencies": ["gre", "ser", "tri"],
+      "fleetAdjacencies": ["adr", "gre", "ion", "tri"]
+    },
+    "ank": {
+      "name": "Ankara", "type": "coast",
+      "armyAdjacencies": ["arm", "con", "smy"],
+      "fleetAdjacencies": ["arm", "bla", "con"]
+    },
+    "apu": {
+      "name": "Apulia", "type": "coast",
+      "armyAdjacencies": ["nap", "rom", "ven"],
+      "fleetAdjacencies": ["adr", "ion", "nap", "ven"]
+    },
+    "arm": {
+      "name": "Armenia", "type": "coast",
+      "armyAdjacencies": ["ank", "sev", "smy", "syr"],
+      "fleetAdjacencies": ["ank", "bla", "sev"]
+    },
+    "bal": {
+      "name": "Baltic Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["ber", "bot", "den", "kie", "lvn", "pru", "swe"]
+    },
+    "bar": {
+      "name": "Barents Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["nwg", "nwy", "stp_nc"]
+    },
+    "bel": {
+      "name": "Belgium", "type": "coast",
+      "armyAdjacencies": ["bur", "hol", "pic", "ruh"],
+      "fleetAdjacencies": ["eng", "hol", "nth", "pic"]
+    },
+    "ber": {
+      "name": "Berlin", "type": "coast",
+      "armyAdjacencies": ["kie", "mun", "pru", "sil"],
+      "fleetAdjacencies": ["bal", "kie", "pru"]
+    },
+    "bla": {
+      "name": "Black Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["ank", "arm", "bul_ec", "con", "rum", "sev"]
+    },
+    "boh": {
+      "name": "Bohemia", "type": "land",
+      "armyAdjacencies": ["gal", "mun", "sil", "tyr", "vie"],
+      "fleetAdjacencies": null
+    },
+    "bot": {
+      "name": "Gulf of Bothnia", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bal", "fin", "lvn", "stp_sc", "swe"]
+    },
+    "bre": {
+      "name": "Brest", "type": "coast",
+      "armyAdjacencies": ["gas", "par", "pic"],
+      "fleetAdjacencies": ["eng", "gas", "mao", "pic"]
+    },
+    "bud": {
+      "name": "Budapest", "type": "land",
+      "armyAdjacencies": ["gal", "rum", "ser", "tri", "vie"],
+      "fleetAdjacencies": null
+    },
+    "bul": {
+      "name": "Bulgaria", "type": "coast",
+      "armyAdjacencies": ["con", "gre", "rum", "ser"],
+      "fleetAdjacencies": null
+    },
+    "bul_ec": {
+      "name": "Bulgaria (east coast)", "type": "coast",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bla", "con", "rum"]
+    },
+    "bul_sc": {
+      "name": "Bulgaria (south coast)", "type": "coast",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["aeg", "con", "gre"]
+    },
+    "bur": {
+      "name": "Burgundy", "type": "land",
+      "armyAdjacencies": ["bel", "gas", "mar", "mun", "par", "pic", "ruh"],
+      "fleetAdjacencies": null
+    },
+    "cly": {
+      "name": "Clyde", "type": "coast",
+      "armyAdjacencies": ["edi", "lvp"],
+      "fleetAdjacencies": ["edi", "lvp", "nao", "nwg"]
+    },
+    "con": {
+      "name": "Constantinople", "type": "coast",
+      "armyAdjacencies": ["ank", "bul", "smy"],
+      "fleetAdjacencies": ["aeg", "ank", "bla", "bul_ec", "bul_sc", "smy"]
+    },
+    "den": {
+      "name": "Denmark", "type": "coast",
+      "armyAdjacencies": ["kie", "swe"],
+      "fleetAdjacencies": ["bal", "hel", "kie", "nth", "ska", "swe"]
+    },
+    "eas": {
+      "name": "Eastern Mediterranean", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["aeg", "ion", "smy", "syr"]
+    },
+    "edi": {
+      "name": "Edinburgh", "type": "coast",
+      "armyAdjacencies": ["cly", "lvp", "yor"],
+      "fleetAdjacencies": ["cly", "nth", "nwg", "yor"]
+    },
+    "eng": {
+      "name": "English Channel", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bel", "bre", "iri", "lon", "mao", "nth", "pic", "wal"]
+    },
+    "fin": {
+      "name": "Finland", "type": "coast",
+      "armyAdjacencies": ["nwy", "stp", "swe"],
+      "fleetAdjacencies": ["bot", "stp_sc", "swe"]
+    },
+    "gal": {
+      "name": "Galicia", "type": "land",
+      "armyAdjacencies": ["boh", "bud", "rum", "sil", "ukr", "vie", "war"],
+      "fleetAdjacencies": null
+    },
+    "gas": {
+      "name": "Gascony", "type": "coast",
+      "armyAdjacencies": ["bre", "bur", "mar", "par", "spa"],
+      "fleetAdjacencies": ["bre", "mao", "spa_nc"]
+    },
+    "gre": {
+      "name": "Greece", "type": "coast",
+      "armyAdjacencies": ["alb", "bul", "ser"],
+      "fleetAdjacencies": ["aeg", "alb", "bul_sc", "ion"]
+    },
+    "hel": {
+      "name": "Helgoland Bight", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["den", "hol", "kie", "nth"]
+    },
+    "hol": {
+      "name": "Holland", "type": "coast",
+      "armyAdjacencies": ["bel", "kie", "ruh"],
+      "fleetAdjacencies": ["bel", "hel", "kie", "nth"]
+    },
+    "ion": {
+      "name": "Ionian Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["adr", "aeg", "alb", "apu", "eas", "gre", "nap", "tun", "tys"]
+    },
+    "iri": {
+      "name": "Irish Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["eng", "lvp", "mao", "nao", "wal"]
+    },
+    "kie": {
+      "name": "Kiel", "type": "coast",
+      "armyAdjacencies": ["ber", "den", "hol", "mun", "ruh"],
+      "fleetAdjacencies": ["bal", "ber", "den", "hel", "hol"]
+    },
+    "lon": {
+      "name": "London", "type": "coast",
+      "armyAdjacencies": ["wal", "yor"],
+      "fleetAdjacencies": ["eng", "nth", "wal", "yor"]
+    },
+    "lvn": {
+      "name": "Livonia", "type": "coast",
+      "armyAdjacencies": ["mos", "pru", "stp", "war"],
+      "fleetAdjacencies": ["bal", "bot", "pru", "stp_sc"]
+    },
+    "lvp": {
+      "name": "Liverpool", "type": "coast",
+      "armyAdjacencies": ["cly", "edi", "wal", "yor"],
+      "fleetAdjacencies": ["cly", "iri", "nao", "wal"]
+    },
+    "lyo": {
+      "name": "Gulf of Lyon", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["mar", "pie", "spa_sc", "tus", "tys", "wes"]
+    },
+    "mao": {
+      "name": "Mid-Atlantic Ocean", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bre", "eng", "gas", "iri", "naf", "nao", "por", "spa_nc", "spa_sc", "wes"]
+    },
+    "mar": {
+      "name": "Marseilles", "type": "coast",
+      "armyAdjacencies": ["bur", "gas", "pie", "spa"],
+      "fleetAdjacencies": ["lyo", "pie", "spa_sc"]
+    },
+    "mos": {
+      "name": "Moscow", "type": "land",
+      "armyAdjacencies": ["lvn", "sev", "stp", "ukr", "war"],
+      "fleetAdjacencies": null
+    },
+    "mun": {
+      "name": "Munich", "type": "land",
+      "armyAdjacencies": ["ber", "boh", "bur", "kie", "ruh", "sil", "tyr"],
+      "fleetAdjacencies": null
+    },
+    "naf": {
+      "name": "North Africa", "type": "coast",
+      "armyAdjacencies": ["tun"],
+      "fleetAdjacencies": ["mao", "tun", "wes"]
+    },
+    "nao": {
+      "name": "North Atlantic Ocean", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["cly", "iri", "lvp", "mao", "nwg"]
+    },
+    "nap": {
+      "name": "Naples", "type": "coast",
+      "armyAdjacencies": ["apu", "rom"],
+      "fleetAdjacencies": ["apu", "ion", "rom", "tys"]
+    },
+    "nth": {
+      "name": "North Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bel", "den", "edi", "eng", "hel", "hol", "lon", "nwg", "nwy", "ska", "yor"]
+    },
+    "nwg": {
+      "name": "Norwegian Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bar", "cly", "edi", "nao", "nth", "nwy"]
+    },
+    "nwy": {
+      "name": "Norway", "type": "coast",
+      "armyAdjacencies": ["fin", "ska", "stp", "swe"],
+      "fleetAdjacencies": ["bar", "nth", "nwg", "ska", "stp_nc", "swe"]
+    },
+    "par": {
+      "name": "Paris", "type": "land",
+      "armyAdjacencies": ["bre", "bur", "gas", "pic"],
+      "fleetAdjacencies": null
+    },
+    "pic": {
+      "name": "Picardy", "type": "coast",
+      "armyAdjacencies": ["bel", "bre", "bur", "par"],
+      "fleetAdjacencies": ["bel", "bre", "eng"]
+    },
+    "pie": {
+      "name": "Piedmont", "type": "coast",
+      "armyAdjacencies": ["mar", "tus", "tyr", "ven"],
+      "fleetAdjacencies": ["lyo", "mar", "tus"]
+    },
+    "por": {
+      "name": "Portugal", "type": "coast",
+      "armyAdjacencies": ["spa"],
+      "fleetAdjacencies": ["mao", "spa_nc", "spa_sc"]
+    },
+    "pru": {
+      "name": "Prussia", "type": "coast",
+      "armyAdjacencies": ["ber", "lvn", "sil", "war"],
+      "fleetAdjacencies": ["bal", "ber", "lvn"]
+    },
+    "rom": {
+      "name": "Rome", "type": "coast",
+      "armyAdjacencies": ["apu", "nap", "tus", "ven"],
+      "fleetAdjacencies": ["nap", "tus", "tys"]
+    },
+    "ruh": {
+      "name": "Ruhr", "type": "land",
+      "armyAdjacencies": ["bel", "bur", "hol", "kie", "mun"],
+      "fleetAdjacencies": null
+    },
+    "rum": {
+      "name": "Rumania", "type": "coast",
+      "armyAdjacencies": ["bud", "bul", "gal", "ser", "sev", "ukr"],
+      "fleetAdjacencies": ["bla", "bul_ec", "sev"]
+    },
+    "ser": {
+      "name": "Serbia", "type": "land",
+      "armyAdjacencies": ["alb", "bud", "bul", "gre", "rum", "tri"],
+      "fleetAdjacencies": null
+    },
+    "sev": {
+      "name": "Sevastopol", "type": "coast",
+      "armyAdjacencies": ["arm", "mos", "rum", "ukr"],
+      "fleetAdjacencies": ["arm", "bla", "rum"]
+    },
+    "sil": {
+      "name": "Silesia", "type": "land",
+      "armyAdjacencies": ["ber", "boh", "gal", "mun", "pru", "war"],
+      "fleetAdjacencies": null
+    },
+    "ska": {
+      "name": "Skagerrak", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["den", "nth", "nwy", "swe"]
+    },
+    "smy": {
+      "name": "Smyrna", "type": "coast",
+      "armyAdjacencies": ["ank", "arm", "con", "syr"],
+      "fleetAdjacencies": ["aeg", "con", "eas", "syr"]
+    },
+    "spa": {
+      "name": "Spain", "type": "coast",
+      "armyAdjacencies": ["gas", "mar", "por"],
+      "fleetAdjacencies": null
+    },
+    "spa_nc": {
+      "name": "Spain (north coast)", "type": "coast",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["gas", "mao", "por"]
+    },
+    "spa_sc": {
+      "name": "Spain (south coast)", "type": "coast",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["lyo", "mao", "mar", "por", "wes"]
+    },
+    "stp": {
+      "name": "St. Petersburg", "type": "coast",
+      "armyAdjacencies": ["fin", "lvn", "mos", "nwy"],
+      "fleetAdjacencies": null
+    },
+    "stp_nc": {
+      "name": "St. Petersburg (north coast)", "type": "coast",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bar", "nwy"]
+    },
+    "stp_sc": {
+      "name": "St. Petersburg (south coast)", "type": "coast",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["bot", "fin", "lvn"]
+    },
+    "swe": {
+      "name": "Sweden", "type": "coast",
+      "armyAdjacencies": ["den", "fin", "nwy"],
+      "fleetAdjacencies": ["bal", "bot", "den", "fin", "nwy", "ska"]
+    },
+    "swi": {
+      "name": "Switzerland", "type": "shut",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": null
+    },
+    "syr": {
+      "name": "Syria", "type": "coast",
+      "armyAdjacencies": ["arm", "smy"],
+      "fleetAdjacencies": ["eas", "smy"]
+    },
+    "tri": {
+      "name": "Trieste", "type": "coast",
+      "armyAdjacencies": ["alb", "bud", "ser", "tyr", "ven", "vie"],
+      "fleetAdjacencies": ["adr", "alb", "ven"]
+    },
+    "tun": {
+      "name": "Tunis", "type": "coast",
+      "armyAdjacencies": ["naf"],
+      "fleetAdjacencies": ["ion", "naf", "tys", "wes"]
+    },
+    "tus": {
+      "name": "Tuscany", "type": "coast",
+      "armyAdjacencies": ["pie", "rom", "ven"],
+      "fleetAdjacencies": ["lyo", "pie", "rom", "tys"]
+    },
+    "tyr": {
+      "name": "Tyrolia", "type": "land",
+      "armyAdjacencies": ["boh", "mun", "pie", "tri", "ven", "vie"],
+      "fleetAdjacencies": null
+    },
+    "tys": {
+      "name": "Tyrrhenian Sea", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["ion", "lyo", "nap", "rom", "tun", "tus", "wes"]
+    },
+    "ukr": {
+      "name": "Ukraine", "type": "land",
+      "armyAdjacencies": ["gal", "mos", "rum", "sev", "war"],
+      "fleetAdjacencies": null
+    },
+    "ven": {
+      "name": "Venice", "type": "coast",
+      "armyAdjacencies": ["apu", "pie", "rom", "tri", "tus", "tyr"],
+      "fleetAdjacencies": ["adr", "apu", "tri"]
+    },
+    "vie": {
+      "name": "Vienna", "type": "land",
+      "armyAdjacencies": ["boh", "bud", "gal", "tri", "tyr"],
+      "fleetAdjacencies": null
+    },
+    "wal": {
+      "name": "Wales", "type": "coast",
+      "armyAdjacencies": ["lon", "lvp", "yor"],
+      "fleetAdjacencies": ["eng", "iri", "lon", "lvp"]
+    },
+    "war": {
+      "name": "Warsaw", "type": "land",
+      "armyAdjacencies": ["gal", "lvn", "mos", "pru", "sil", "ukr"],
+      "fleetAdjacencies": null
+    },
+    "wes": {
+      "name": "Western Mediterranean", "type": "water",
+      "armyAdjacencies": null,
+      "fleetAdjacencies": ["lyo", "mao", "naf", "spa_sc", "tun", "tys"]
+    },
+    "yor": {
+      "name": "Yorkshire", "type": "coast",
+      "armyAdjacencies": ["edi", "lon", "lvp", "wal"],
+      "fleetAdjacencies": ["edi", "lon", "nth"]
+    }
+  }
+}
