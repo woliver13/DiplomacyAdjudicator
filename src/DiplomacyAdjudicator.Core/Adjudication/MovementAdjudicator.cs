@@ -22,12 +22,6 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
         var resolver = new MovementResolver(_map, request.Units, orders);
         var resolved = resolver.ResolveAll();
 
-        // Provinces successfully entered this turn
-        var successfullyEntered = resolved
-            .Where(kvp => kvp.Key is MoveOrder && kvp.Value)
-            .Select(kvp => MapGraph.BaseCode(((MoveOrder)kvp.Key).Destination.Code))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
         // Units indexed by base province code for dislodged-unit lookup
         var unitsByBase = request.Units.ToDictionary(
             u => MapGraph.BaseCode(u.Province.Code),
@@ -38,6 +32,29 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
             o => MapGraph.BaseCode(o.Unit.Province.Code),
             StringComparer.OrdinalIgnoreCase);
 
+        // Provinces occupied after movement (remove movers' origins, add destinations)
+        var occupiedAfterMovement = new HashSet<string>(
+            request.Units.Select(u => MapGraph.BaseCode(u.Province.Code)),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (order, success) in resolved)
+        {
+            if (order is MoveOrder m && success)
+            {
+                occupiedAfterMovement.Remove(MapGraph.BaseCode(m.Unit.Province.Code));
+                occupiedAfterMovement.Add(MapGraph.BaseCode(m.Destination.Code));
+            }
+        }
+
+        // Standoff provinces: 2+ failed move orders targeted the same destination
+        var standoffProvinces = resolved
+            .Where(kvp => kvp.Key is MoveOrder && !kvp.Value)
+            .GroupBy(kvp => MapGraph.BaseCode(((MoveOrder)kvp.Key).Destination.Code),
+                     StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() >= 2)
+            .Select(g => g.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         // First pass: compute base outcomes
         var resultMap = new Dictionary<string, OrderResult>(StringComparer.OrdinalIgnoreCase);
         foreach (var order in orders)
@@ -47,7 +64,7 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
             resultMap[baseCode] = new OrderResult(order, outcome);
         }
 
-        // Second pass: mark dislodged units
+        // Second pass: mark dislodged units and compute retreat options
         var dislodgedUnits = new List<DislodgedUnit>();
 
         foreach (var (order, success) in resolved)
@@ -68,7 +85,11 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
             if (resultMap.TryGetValue(destBase, out var existing))
                 resultMap[destBase] = existing with { Outcome = OrderOutcome.Dislodged };
 
-            dislodgedUnits.Add(new DislodgedUnit(displaced, []));
+            var attackedFrom = move.Unit.Province;
+            var retreatOptions = ComputeRetreatOptions(
+                displaced, attackedFrom, occupiedAfterMovement, standoffProvinces);
+
+            dislodgedUnits.Add(new DislodgedUnit(displaced, attackedFrom, retreatOptions));
         }
 
         var nextPhase = dislodgedUnits.Count > 0 ? PhaseType.Retreat : PhaseType.Build;
@@ -117,6 +138,29 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
         }
 
         return normalized;
+    }
+
+    // -------------------------------------------------------------------------
+    // Retreat option computation
+    // -------------------------------------------------------------------------
+
+    private List<Province> ComputeRetreatOptions(
+        Unit unit,
+        Province attackedFrom,
+        HashSet<string> occupiedAfterMovement,
+        HashSet<string> standoffProvinces)
+    {
+        var attackedFromBase = MapGraph.BaseCode(attackedFrom.Code);
+
+        return _map.GetNeighbors(unit.Province, unit.Type)
+            .Where(p =>
+            {
+                var baseCode = MapGraph.BaseCode(p.Code);
+                return !occupiedAfterMovement.Contains(baseCode)
+                    && !baseCode.Equals(attackedFromBase, StringComparison.OrdinalIgnoreCase)
+                    && !standoffProvinces.Contains(baseCode);
+            })
+            .ToList();
     }
 
     // -------------------------------------------------------------------------

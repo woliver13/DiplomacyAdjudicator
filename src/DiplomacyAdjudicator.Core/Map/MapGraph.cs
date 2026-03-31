@@ -198,6 +198,26 @@ public sealed class MapGraph
         return idx >= 0 ? code[..idx] : code;
     }
 
+    /// <summary>
+    /// Returns all provinces directly reachable from <paramref name="province"/>
+    /// by a unit of <paramref name="unitType"/> in a single move.
+    /// For fleet units at bicoastal coast variants the specific coast adjacencies are used.
+    /// </summary>
+    public IReadOnlyList<Province> GetNeighbors(Province province, UnitType unitType)
+    {
+        if (!_provinces.TryGetValue(province.Code, out var data))
+            return [];
+
+        var adjacencies = unitType == UnitType.Army
+            ? data.ArmyAdjacencies
+            : data.FleetAdjacencies;
+
+        if (adjacencies is null)
+            return [];
+
+        return adjacencies.Select(c => new Province(c)).ToList();
+    }
+
     // Strip coast suffix to get base province code: "spa_nc" → "spa", "bul_ec" → "bul"
     private static string NormalizeToBase(string code) => BaseCode(code);
 }
