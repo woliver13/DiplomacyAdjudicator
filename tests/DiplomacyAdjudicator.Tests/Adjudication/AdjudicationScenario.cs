@@ -42,6 +42,9 @@ internal sealed class AdjudicationScenario
         return this;
     }
 
+    internal AdjudicationScenario AssertDislodged(string province)
+        => AssertOutcome(province, OrderOutcome.Dislodged);
+
     internal void Run()
     {
         var parser = new OrderParser(_map);
@@ -77,9 +80,8 @@ internal sealed class AdjudicationScenario
                 throw new InvalidOperationException(
                     $"No order result found for province '{province}'.");
 
-            Xunit.Assert.Equal(
-                expected,
-                orderResult.Outcome,
+            Xunit.Assert.True(
+                expected == orderResult.Outcome,
                 $"Province '{province}': expected {expected} but got {orderResult.Outcome}. Reason: {orderResult.Reason}");
         }
     }
