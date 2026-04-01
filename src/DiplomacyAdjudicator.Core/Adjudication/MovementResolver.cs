@@ -96,23 +96,26 @@ internal sealed class MovementResolver
         // Cannot move to own province
         if (move.Unit.Province == move.Destination) return false;
 
-        // Destination must be reachable
-        if (!_map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type))
-            return false;
-
         // Cannot move into Switzerland
         if (_map.IsShut(move.Destination)) return false;
 
-        var orderAtDest = GetOrderAt(move.Destination);
+        bool direct  = _map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type);
+        bool convoy  = !direct && move.Unit.Type == UnitType.Army && HasConvoyPath(move);
 
-        // Head-on collision: A→B while B→A (normalised to base codes)
-        if (orderAtDest is MoveOrder counter &&
-            MapGraph.BaseCode(counter.Destination.Code) == MapGraph.BaseCode(move.Unit.Province.Code) &&
-            MapGraph.BaseCode(counter.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code))
+        if (!direct && !convoy) return false;
+
+        // Head-on collision: only between two DIRECT moves going to each other's province
+        if (direct)
         {
-            if (DefendStrength(move) <= DefendStrength(counter))
-                return false;
-            // Else: we win head-on; fall through to hold-strength check
+            var orderAtDest = GetOrderAt(move.Destination);
+            if (orderAtDest is MoveOrder counter &&
+                MapGraph.BaseCode(counter.Destination.Code) == MapGraph.BaseCode(move.Unit.Province.Code) &&
+                MapGraph.BaseCode(counter.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code) &&
+                _map.IsAdjacent(counter.Unit.Province, counter.Destination, counter.Unit.Type))
+            {
+                if (DefendStrength(move) <= DefendStrength(counter))
+                    return false;
+            }
         }
 
         // Attack must exceed hold strength of destination
@@ -121,10 +124,11 @@ internal sealed class MovementResolver
 
         // No competing move may have prevent strength >= our attack strength
         int atk = AttackStrength(move);
+        var destBase = MapGraph.BaseCode(move.Destination.Code);
         foreach (var other in _orders.Values.OfType<MoveOrder>())
         {
             if (other == move) continue;
-            if (other.Destination != move.Destination) continue;
+            if (!MapGraph.BaseCode(other.Destination.Code).Equals(destBase, StringComparison.OrdinalIgnoreCase)) continue;
             if (PreventStrength(other) >= atk) return false;
         }
 
@@ -152,31 +156,31 @@ internal sealed class MovementResolver
 
     private int AttackStrength(MoveOrder move)
     {
-        if (!_map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type))
-            return 0;
+        bool direct = _map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type);
+        bool convoy = !direct && move.Unit.Type == UnitType.Army && HasConvoyPath(move);
+        if (!direct && !convoy) return 0;
 
-        var defender = _units.GetValueOrDefault(move.Destination);
+        var destBase = MapGraph.BaseCode(move.Destination.Code);
+        var defender = _units.Values.FirstOrDefault(u =>
+            MapGraph.BaseCode(u.Province.Code).Equals(destBase, StringComparison.OrdinalIgnoreCase));
+
         int count = 1;
-
         foreach (var s in _orders.Values.OfType<SupportMoveOrder>())
         {
             if (s.SupportedOrigin != move.Unit.Province) continue;
             if (s.SupportedDestination != move.Destination) continue;
             if (!Resolve(s)) continue;
-
-            // National restriction: support from the defender's own power doesn't count
             if (defender is not null && s.Unit.Power == defender.Power) continue;
             count++;
         }
-
         return count;
     }
 
     private int DefendStrength(MoveOrder move)
     {
-        // Like attack strength but no national restriction (used in head-on comparison)
-        if (!_map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type))
-            return 0;
+        bool direct = _map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type);
+        bool convoy = !direct && move.Unit.Type == UnitType.Army && HasConvoyPath(move);
+        if (!direct && !convoy) return 0;
 
         return 1 + _orders.Values
             .OfType<SupportMoveOrder>()
@@ -187,20 +191,28 @@ internal sealed class MovementResolver
 
     private int PreventStrength(MoveOrder move)
     {
-        if (!_map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type))
+        // A move to own province is always illegal — it contributes no prevent strength.
+        if (MapGraph.BaseCode(move.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code))
             return 0;
 
-        // If the move is involved in a losing head-on, its prevent strength is 0
-        var orderAtDest = GetOrderAt(move.Destination);
-        if (orderAtDest is MoveOrder counter &&
-            MapGraph.BaseCode(counter.Destination.Code) == MapGraph.BaseCode(move.Unit.Province.Code) &&
-            MapGraph.BaseCode(counter.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code))
+        bool direct = _map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type);
+        bool convoy = !direct && move.Unit.Type == UnitType.Army && HasConvoyPath(move);
+        if (!direct && !convoy) return 0;
+
+        // A direct move losing a head-on gets prevent strength 0
+        if (direct)
         {
-            if (DefendStrength(move) <= DefendStrength(counter))
-                return 0;
+            var orderAtDest = GetOrderAt(move.Destination);
+            if (orderAtDest is MoveOrder counter &&
+                MapGraph.BaseCode(counter.Destination.Code) == MapGraph.BaseCode(move.Unit.Province.Code) &&
+                MapGraph.BaseCode(counter.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code) &&
+                _map.IsAdjacent(counter.Unit.Province, counter.Destination, counter.Unit.Type))
+            {
+                if (DefendStrength(move) <= DefendStrength(counter))
+                    return 0;
+            }
         }
 
-        // Otherwise: 1 + all successful support-move orders (no national restriction)
         return 1 + _orders.Values
             .OfType<SupportMoveOrder>()
             .Count(s => s.SupportedOrigin == move.Unit.Province
@@ -215,13 +227,14 @@ internal sealed class MovementResolver
     private bool AdjudicateSupportHold(SupportHoldOrder support)
     {
         // Support is void if unit doesn't exist at supported province
-        if (!_units.ContainsKey(support.SupportedProvince)) return false;
+        if (!HasUnitAt(support.SupportedProvince)) return false;
 
         // Support is void if the supported unit is itself trying to move out
         if (GetOrderAt(support.SupportedProvince) is MoveOrder) return false;
 
-        // Support is void if the supporter cannot legally reach the supported province
-        if (!_map.IsAdjacent(support.Unit.Province, support.SupportedProvince, support.Unit.Type))
+        // Support is void if the supporter cannot legally reach the supported province.
+        // Coast-insensitive: if supporter can reach ANY coast of the province it counts.
+        if (!CanReachProvince(support.Unit.Province, support.SupportedProvince, support.Unit.Type))
             return false;
 
         // Support is cut if any unit attacks the supporter's province (base-code match)
@@ -240,14 +253,15 @@ internal sealed class MovementResolver
 
     private bool AdjudicateSupportMove(SupportMoveOrder support)
     {
-        // Support is void if the supporter cannot legally reach the supported destination
-        if (!_map.IsAdjacent(support.Unit.Province, support.SupportedDestination, support.Unit.Type))
+        // Support is void if the supporter cannot legally reach the supported destination.
+        // Coast-insensitive: if supporter can reach ANY coast of the province it counts.
+        if (!CanReachProvince(support.Unit.Province, support.SupportedDestination, support.Unit.Type))
             return false;
 
         // Support is void if there is no matching move order at the supported origin
         var orderAtOrigin = GetOrderAt(support.SupportedOrigin);
         if (orderAtOrigin is not MoveOrder targetMove ||
-            targetMove.Destination != support.SupportedDestination)
+            MapGraph.BaseCode(targetMove.Destination.Code) != MapGraph.BaseCode(support.SupportedDestination.Code))
             return false;
 
         // Support is cut if any unit attacks the supporter's province (base-code match)
@@ -265,25 +279,83 @@ internal sealed class MovementResolver
     }
 
     // -------------------------------------------------------------------------
-    // Convoy adjudication (basic — full disruption logic in M5)
+    // Convoy adjudication
     // -------------------------------------------------------------------------
 
     private bool AdjudicateConvoy(ConvoyOrder convoy)
     {
-        // A convoy fails if the fleet is dislodged.
-        // For now: check if any move into the fleet's province succeeds.
-        // (Full convoy chain + disruption paradox handling deferred to M5.)
+        // A fleet must be at sea to convoy.
+        if (!_map.IsSea(convoy.Unit.Province)) return false;
+
+        // A convoy fails if the fleet is dislodged (any attacking move succeeds).
+        var fleetBase = MapGraph.BaseCode(convoy.Unit.Province.Code);
         foreach (var attack in _orders.Values.OfType<MoveOrder>())
         {
-            if (attack.Destination == convoy.Unit.Province)
-            {
-                // If this attack would succeed without the convoy in place, fail
-                // Simplified: check basic attack vs hold strength ignoring convoy
-                var attStr = AttackStrength(attack);
-                if (attStr > 1) return false; // supported attack — fleet dislodged
-            }
+            if (!string.Equals(MapGraph.BaseCode(attack.Destination.Code), fleetBase,
+                    StringComparison.OrdinalIgnoreCase)) continue;
+            if (Resolve(attack)) return false;
         }
         return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Convoy path (BFS through active convoy fleets)
+    // -------------------------------------------------------------------------
+
+    private bool HasConvoyPath(MoveOrder move)
+    {
+        if (move.Unit.Type != UnitType.Army) return false;
+
+        var originBase = MapGraph.BaseCode(move.Unit.Province.Code);
+        var destBase   = MapGraph.BaseCode(move.Destination.Code);
+
+        // Active convoy fleets that match this army's origin→destination
+        var activeConvoys = _orders.Values
+            .OfType<ConvoyOrder>()
+            .Where(c =>
+                string.Equals(MapGraph.BaseCode(c.ConvoyedOrigin.Code), originBase,
+                    StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(MapGraph.BaseCode(c.ConvoyedDestination.Code), destBase,
+                    StringComparison.OrdinalIgnoreCase) &&
+                Resolve(c))
+            .ToList();
+
+        if (activeConvoys.Count == 0) return false;
+
+        // BFS: start from convoy fleets adjacent to the army's origin province
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var queue   = new Queue<string>();
+
+        foreach (var convoy in activeConvoys)
+        {
+            if (!_map.IsAdjacent(convoy.Unit.Province, move.Unit.Province, UnitType.Fleet))
+                continue;
+            var code = MapGraph.BaseCode(convoy.Unit.Province.Code);
+            if (visited.Add(code)) queue.Enqueue(code);
+        }
+
+        while (queue.Count > 0)
+        {
+            var cur = queue.Dequeue();
+
+            // If this fleet province is adjacent to the destination, a path exists
+            if (_map.IsAdjacent(new Province(cur), move.Destination, UnitType.Fleet))
+                return true;
+
+            // Expand to adjacent active convoy fleets not yet visited
+            foreach (var convoy in activeConvoys)
+            {
+                var code = MapGraph.BaseCode(convoy.Unit.Province.Code);
+                if (visited.Contains(code)) continue;
+                if (_map.IsAdjacent(new Province(cur), convoy.Unit.Province, UnitType.Fleet))
+                {
+                    visited.Add(code);
+                    queue.Enqueue(code);
+                }
+            }
+        }
+
+        return false;
     }
 
     // -------------------------------------------------------------------------
@@ -326,6 +398,16 @@ internal sealed class MovementResolver
 
             visited.Add(originBase);
 
+            // If any external move has already successfully resolved into this province,
+            // the unit here is dislodged and the circular movement is disrupted.
+            foreach (var other in _orders.Values.OfType<MoveOrder>())
+            {
+                if (other == current) continue;
+                if (!MapGraph.BaseCode(other.Destination.Code)
+                        .Equals(originBase, StringComparison.OrdinalIgnoreCase)) continue;
+                if (_resolved.GetValueOrDefault(other)) return false;
+            }
+
             var nextOrder = GetOrderAt(current.Destination);
             if (nextOrder is not MoveOrder nextMove) return false;
             current = nextMove;
@@ -334,8 +416,9 @@ internal sealed class MovementResolver
 
     private bool IsLegalMove(MoveOrder move)
         => move.Unit.Province != move.Destination
-        && _map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type)
-        && !_map.IsShut(move.Destination);
+        && !_map.IsShut(move.Destination)
+        && (_map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type)
+            || (move.Unit.Type == UnitType.Army && HasConvoyPath(move)));
 
     private void MarkCycleAsSuccess(MoveOrder start)
     {
@@ -383,5 +466,18 @@ internal sealed class MovementResolver
         foreach (var p in _units.Keys)
             if (MapGraph.BaseCode(p.Code) == baseCode) return true;
         return false;
+    }
+
+    /// <summary>
+    /// Returns true if <paramref name="from"/> can reach the base province of
+    /// <paramref name="to"/> by any coast. This implements DATC 6.B.4: a fleet that
+    /// can reach Spain/SC can support a move to Spain/NC.
+    /// </summary>
+    private bool CanReachProvince(Province from, Province to, UnitType unitType)
+    {
+        if (_map.IsAdjacent(from, to, unitType)) return true;
+        var targetBase = MapGraph.BaseCode(to.Code);
+        return _map.GetNeighbors(from, unitType)
+            .Any(n => MapGraph.BaseCode(n.Code).Equals(targetBase, StringComparison.OrdinalIgnoreCase));
     }
 }

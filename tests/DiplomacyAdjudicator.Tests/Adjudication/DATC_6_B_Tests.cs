@@ -62,7 +62,7 @@ public class DATC_6_B_Tests
             .WithOrder("france", "fleet", "mar", "support fleet gas move spa_nc")
             .WithOrder("italy", "fleet", "wes", "move spa_sc")
             .AssertOutcome("gas", OrderOutcome.Success)
-            .AssertOutcome("wes", OrderOutcome.Success) // different coast, no conflict
+            .AssertOutcome("wes", OrderOutcome.Failure) // same province (different coast), GAS has higher attack
             .Run();
     }
 
