@@ -1,0 +1,162 @@
+using System.Net;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
+
+namespace DiplomacyAdjudicator.Api.Tests;
+
+public class AdjudicationApiTests(WebApplicationFactory<Program> factory)
+    : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly HttpClient _client = factory.CreateClient();
+
+    // -------------------------------------------------------------------------
+    // POST /adjudicate/movement
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Movement_HoldOrder_Returns200WithOrderResult()
+    {
+        var body = new
+        {
+            units = new[]
+            {
+                new { power = "austria", type = "army", province = "vie" }
+            },
+            orders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "vie", orderText = "hold" }
+            },
+            supplyCenters = new Dictionary<string, string[]>
+            {
+                ["austria"] = ["vie"]
+            }
+        };
+
+        var response = await _client.PostAsJsonAsync("/adjudicate/movement", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<MovementResponseDto>();
+        Assert.NotNull(result);
+        Assert.Single(result.OrderResults);
+        Assert.Equal("vie", result.OrderResults[0].Province);
+        Assert.Equal("Success", result.OrderResults[0].Outcome);
+    }
+
+    [Fact]
+    public async Task Movement_SuccessfulAttack_ReturnsDislodgedUnit()
+    {
+        // TYR→VIE (supported by BOH, which is army-adjacent to VIE)
+        var body = new
+        {
+            units = new[]
+            {
+                new { power = "austria", type = "army", province = "vie" },
+                new { power = "germany", type = "army", province = "tyr" },
+                new { power = "germany", type = "army", province = "boh" },
+            },
+            orders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "vie", orderText = "hold" },
+                new { power = "germany", unitType = "army", province = "tyr", orderText = "move vie" },
+                new { power = "germany", unitType = "army", province = "boh", orderText = "support army tyr move vie" },
+            },
+            supplyCenters = new Dictionary<string, string[]>
+            {
+                ["austria"] = ["vie"],
+                ["germany"] = ["mun"]
+            }
+        };
+
+        var response = await _client.PostAsJsonAsync("/adjudicate/movement", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<MovementResponseDto>();
+        Assert.NotNull(result);
+        Assert.Single(result.DislodgedUnits);
+        Assert.Equal("vie", result.DislodgedUnits[0].Unit.Province);
+        Assert.Equal("tyr", result.DislodgedUnits[0].AttackedFrom);
+        Assert.NotEmpty(result.DislodgedUnits[0].RetreatOptions);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /adjudicate/retreat
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Retreat_ValidRetreatOrder_Returns200WithSurvivedUnit()
+    {
+        var body = new
+        {
+            dislodgedUnits = new[]
+            {
+                new
+                {
+                    unit = new { power = "austria", type = "army", province = "vie" },
+                    attackedFrom = "tyr",
+                    retreatOptions = new[] { "bud", "gal" }
+                }
+            },
+            retreatOrders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "vie", orderText = "retreat bud" }
+            }
+        };
+
+        var response = await _client.PostAsJsonAsync("/adjudicate/retreat", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<RetreatResponseDto>();
+        Assert.NotNull(result);
+        Assert.Single(result.SurvivedUnits);
+        Assert.Equal("bud", result.SurvivedUnits[0].Province);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /adjudicate/build
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Build_ValidBuildOrder_Returns200WithNewUnit()
+    {
+        var body = new
+        {
+            units = new[]
+            {
+                new { power = "austria", type = "army", province = "bud" }
+            },
+            supplyCenters = new Dictionary<string, string[]>
+            {
+                ["austria"] = ["vie", "bud"]
+            },
+            buildOrders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "vie", orderText = "build army vie" }
+            }
+        };
+
+        var response = await _client.PostAsJsonAsync("/adjudicate/build", body);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<BuildResponseDto>();
+        Assert.NotNull(result);
+        Assert.Equal(2, result.ResultingUnits.Count);
+        Assert.Contains(result.ResultingUnits, u => u.Province == "vie");
+    }
+}
+
+// Minimal response DTOs for test deserialization
+// Minimal response DTOs — must be internal (not file) so System.Text.Json can deserialize nested types
+internal record UnitDto(string Power, string Type, string Province);
+internal record OrderResultDto(string Province, string Outcome, string? Reason);
+internal record DislodgedUnitDto(UnitDto Unit, string AttackedFrom, IReadOnlyList<string> RetreatOptions);
+internal record MovementResponseDto(
+    IReadOnlyList<OrderResultDto> OrderResults,
+    IReadOnlyList<DislodgedUnitDto> DislodgedUnits,
+    string NextPhase);
+internal record RetreatResponseDto(
+    IReadOnlyList<OrderResultDto> OrderResults,
+    IReadOnlyList<UnitDto> SurvivedUnits);
+internal record BuildResponseDto(
+    IReadOnlyList<OrderResultDto> OrderResults,
+    IReadOnlyList<UnitDto> ResultingUnits);
+

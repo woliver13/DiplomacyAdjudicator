@@ -1,0 +1,167 @@
+using DiplomacyAdjudicator.Core.Adjudication;
+using DiplomacyAdjudicator.Core.Domain;
+using DiplomacyAdjudicator.Core.Map;
+using DiplomacyAdjudicator.Core.Parsing;
+using Microsoft.AspNetCore.Mvc;
+
+namespace DiplomacyAdjudicator.Api.Controllers;
+
+[ApiController]
+[Route("adjudicate")]
+public sealed class AdjudicationController(
+    IMovementAdjudicator movement,
+    IRetreatAdjudicator retreat,
+    IBuildAdjudicator build,
+    MapGraph map) : ControllerBase
+{
+    private readonly OrderParser _parser = new(map);
+
+    // -------------------------------------------------------------------------
+    // POST /adjudicate/movement
+    // -------------------------------------------------------------------------
+
+    [HttpPost("movement")]
+    public IActionResult Movement([FromBody] MovementRequest req)
+    {
+        var units   = req.Units.Select(ToUnit).ToList();
+        var orders  = req.Orders.Select(o => _parser.Parse(ToUnit(o), o.OrderText)).ToList();
+        var scs     = ToSupplyCenters(req.SupplyCenters);
+
+        var result = movement.Adjudicate(new MovementAdjudicationRequest(units, orders, scs));
+
+        return Ok(new MovementResponse(
+            result.OrderResults.Select(r => new OrderResultResponse(
+                r.Order.Unit.Province.Code,
+                r.Outcome.ToString(),
+                r.Reason)).ToList(),
+            result.DislodgedUnits.Select(d => new DislodgedUnitResponse(
+                FromUnit(d.Unit),
+                d.AttackedFrom.Code,
+                d.RetreatOptions.Select(p => p.Code).ToList())).ToList(),
+            result.NextPhase.ToString()));
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /adjudicate/retreat
+    // -------------------------------------------------------------------------
+
+    [HttpPost("retreat")]
+    public IActionResult Retreat([FromBody] RetreatRequest req)
+    {
+        var dislodged = req.DislodgedUnits.Select(d => new DislodgedUnit(
+            ToUnit(d.Unit),
+            new Province(d.AttackedFrom),
+            d.RetreatOptions.Select(p => new Province(p)).ToList())).ToList();
+
+        var retreatOrders = req.RetreatOrders
+            .Select(o => _parser.Parse(ToUnit(o), o.OrderText))
+            .OfType<RetreatOrder>()
+            .ToList();
+
+        // Units with no retreat order are handled by the adjudicator as disbands.
+        var result = retreat.Adjudicate(new RetreatAdjudicationRequest(dislodged, retreatOrders));
+
+        return Ok(new RetreatResponse(
+            result.OrderResults.Select(r => new OrderResultResponse(
+                r.Order.Unit.Province.Code,
+                r.Outcome.ToString(),
+                r.Reason)).ToList(),
+            result.SurvivedUnits.Select(FromUnit).ToList()));
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /adjudicate/build
+    // -------------------------------------------------------------------------
+
+    [HttpPost("build")]
+    public IActionResult Build([FromBody] BuildRequest req)
+    {
+        var units  = req.Units.Select(ToUnit).ToList();
+        var scs    = ToSupplyCenters(req.SupplyCenters);
+        var orders = req.BuildOrders.Select(o => _parser.Parse(ToUnit(o), o.OrderText)).ToList();
+
+        var result = build.Adjudicate(new BuildAdjudicationRequest(units, scs, orders));
+
+        return Ok(new BuildResponse(
+            result.OrderResults.Select(r => new OrderResultResponse(
+                r.Order.Unit.Province.Code,
+                r.Outcome.ToString(),
+                r.Reason)).ToList(),
+            result.ResultingUnits.Select(FromUnit).ToList()));
+    }
+
+    // -------------------------------------------------------------------------
+    // Mapping helpers
+    // -------------------------------------------------------------------------
+
+    private static Unit ToUnit(UnitRequest u)
+        => new(ParseUnitType(u.Type), new Power(u.Power), new Province(u.Province));
+
+    private static UnitResponse FromUnit(Unit u)
+        => new(u.Power.Name, u.Type.ToString().ToLowerInvariant(), u.Province.Code);
+
+    private static IReadOnlyDictionary<Power, IReadOnlyList<Province>> ToSupplyCenters(
+        Dictionary<string, IReadOnlyList<string>> raw)
+        => raw.ToDictionary(
+            kv => new Power(kv.Key),
+            kv => (IReadOnlyList<Province>)kv.Value.Select(p => new Province(p)).ToList());
+
+    private static UnitType ParseUnitType(string s) => s.ToLowerInvariant() switch
+    {
+        "army"  or "a" => UnitType.Army,
+        "fleet" or "f" => UnitType.Fleet,
+        _ => throw new ArgumentException($"Unknown unit type: {s}")
+    };
+}
+
+// -------------------------------------------------------------------------
+// Request models
+// -------------------------------------------------------------------------
+
+public record UnitRequest(string Power, string Type, string Province);
+
+public record OrderRequest(string Power, string UnitType, string Province, string OrderText)
+{
+    // Convenience: treat as UnitRequest for parsing
+    public static implicit operator UnitRequest(OrderRequest o) => new(o.Power, o.UnitType, o.Province);
+}
+
+public record DislodgedUnitRequest(
+    UnitRequest Unit,
+    string AttackedFrom,
+    IReadOnlyList<string> RetreatOptions);
+
+public record MovementRequest(
+    IReadOnlyList<UnitRequest> Units,
+    IReadOnlyList<OrderRequest> Orders,
+    Dictionary<string, IReadOnlyList<string>> SupplyCenters);
+
+public record RetreatRequest(
+    IReadOnlyList<DislodgedUnitRequest> DislodgedUnits,
+    IReadOnlyList<OrderRequest> RetreatOrders);
+
+public record BuildRequest(
+    IReadOnlyList<UnitRequest> Units,
+    Dictionary<string, IReadOnlyList<string>> SupplyCenters,
+    IReadOnlyList<OrderRequest> BuildOrders);
+
+// -------------------------------------------------------------------------
+// Response models
+// -------------------------------------------------------------------------
+
+public record UnitResponse(string Power, string Type, string Province);
+public record OrderResultResponse(string Province, string Outcome, string? Reason);
+public record DislodgedUnitResponse(UnitResponse Unit, string AttackedFrom, IReadOnlyList<string> RetreatOptions);
+
+public record MovementResponse(
+    IReadOnlyList<OrderResultResponse> OrderResults,
+    IReadOnlyList<DislodgedUnitResponse> DislodgedUnits,
+    string NextPhase);
+
+public record RetreatResponse(
+    IReadOnlyList<OrderResultResponse> OrderResults,
+    IReadOnlyList<UnitResponse> SurvivedUnits);
+
+public record BuildResponse(
+    IReadOnlyList<OrderResultResponse> OrderResults,
+    IReadOnlyList<UnitResponse> ResultingUnits);
