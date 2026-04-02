@@ -109,13 +109,13 @@ public class DATC_6_H_Tests
     {
         // A BOH→VIE (supported by BUD, which is adjacent to VIE) dislodges A VIE.
         // VIE's retreat options must NOT include BOH (the attacker's origin).
-        var adjudicator = new MovementAdjudicator(Map);
+        var adjudicator = new MovementAdjudicator();
 
         var vie = new Unit(UnitType.Army, Power.Austria, new Province("vie"));
         var boh = new Unit(UnitType.Army, Power.Germany, new Province("boh"));
         var bud = new Unit(UnitType.Army, Power.Germany, new Province("bud"));
 
-        var result = adjudicator.Adjudicate(new MovementAdjudicationRequest(
+        var result = adjudicator.Adjudicate(new MovementAdjudicationRequest(Map,
             [vie, boh, bud],
             [
                 new HoldOrder(vie),
@@ -136,7 +136,7 @@ public class DATC_6_H_Tests
         // Meanwhile A WAR→GAL and A SIL→GAL both fail — standoff in GAL.
         // VIE's retreat options must NOT include GAL (standoff province).
         // (TYR is not adjacent to GAL; WAR and SIL both are.)
-        var adjudicator = new MovementAdjudicator(Map);
+        var adjudicator = new MovementAdjudicator();
 
         var vie = new Unit(UnitType.Army, Power.Austria, new Province("vie"));
         var boh = new Unit(UnitType.Army, Power.Germany, new Province("boh"));
@@ -144,7 +144,7 @@ public class DATC_6_H_Tests
         var war = new Unit(UnitType.Army, Power.Russia, new Province("war"));
         var sil = new Unit(UnitType.Army, Power.Russia, new Province("sil"));
 
-        var result = adjudicator.Adjudicate(new MovementAdjudicationRequest(
+        var result = adjudicator.Adjudicate(new MovementAdjudicationRequest(Map,
             [vie, boh, bud, war, sil],
             [
                 new HoldOrder(vie),
@@ -165,14 +165,14 @@ public class DATC_6_H_Tests
     {
         // A MUN→SIL succeeds (SIL empty). A BOH is dislodged by A TYR (supported by VIE).
         // BOH CAN retreat to MUN (vacated by the successful MUN→SIL move).
-        var adjudicator = new MovementAdjudicator(Map);
+        var adjudicator = new MovementAdjudicator();
 
         var mun = new Unit(UnitType.Army, Power.Germany, new Province("mun"));
         var boh = new Unit(UnitType.Army, Power.Germany, new Province("boh"));
         var tyr = new Unit(UnitType.Army, Power.Russia, new Province("tyr"));
         var vie = new Unit(UnitType.Army, Power.Russia, new Province("vie"));
 
-        var result = adjudicator.Adjudicate(new MovementAdjudicationRequest(
+        var result = adjudicator.Adjudicate(new MovementAdjudicationRequest(Map,
             [mun, boh, tyr, vie],
             [
                 new MoveOrder(mun, new Province("sil")),

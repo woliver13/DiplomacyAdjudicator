@@ -1,4 +1,5 @@
 using DiplomacyAdjudicator.Core.Domain;
+using DiplomacyAdjudicator.Core.Map;
 
 namespace DiplomacyAdjudicator.Core.Adjudication;
 
@@ -8,6 +9,7 @@ namespace DiplomacyAdjudicator.Core.Adjudication;
 /// Orders may include BuildOrder, DisbandOrder, and WaiveOrder.
 /// </summary>
 public record BuildAdjudicationRequest(
+    MapGraph Map,
     IReadOnlyList<Unit> Units,
     IReadOnlyDictionary<Power, IReadOnlyList<Province>> SupplyCenters,
     IReadOnlyList<Order> BuildOrders

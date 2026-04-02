@@ -31,12 +31,9 @@ namespace DiplomacyAdjudicator.Core.Adjudication;
 /// </summary>
 public sealed class BuildAdjudicator : IBuildAdjudicator
 {
-    private readonly MapGraph _map;
-
-    public BuildAdjudicator(MapGraph map) => _map = map;
-
     public BuildAdjudicationResult Adjudicate(BuildAdjudicationRequest request)
     {
+        var map = request.Map;
         var orderResults = new List<OrderResult>();
         var resultingUnits = new List<Unit>(request.Units);
 
@@ -78,7 +75,7 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
             switch (order)
             {
                 case BuildOrder build:
-                    orderResults.Add(ProcessBuild(build, remainingBuilds, occupiedBases, resultingUnits));
+                    orderResults.Add(ProcessBuild(map, build, remainingBuilds, occupiedBases, resultingUnits));
                     break;
 
                 case DisbandOrder disband:
@@ -123,7 +120,8 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
 
     // -------------------------------------------------------------------------
 
-    private OrderResult ProcessBuild(
+    private static OrderResult ProcessBuild(
+        MapGraph map,
         BuildOrder order,
         Dictionary<Power, int> remainingBuilds,
         HashSet<string> occupiedBases,
@@ -138,7 +136,7 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
             return new OrderResult(order, OrderOutcome.Void, "No build allowance remaining.");
 
         // Must be this power's home SC
-        var homeCenter = _map.GetHomeCenter(province);
+        var homeCenter = map.GetHomeCenter(province);
         if (homeCenter is null || homeCenter != power)
             return new OrderResult(order, OrderOutcome.Void,
                 $"Province '{baseCode}' is not a home supply center for {power.Name}.");
@@ -149,15 +147,15 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
                 $"Province '{baseCode}' is occupied.");
 
         // Unit type must be valid for province type
-        if (order.Unit.Type == UnitType.Fleet && _map.IsInland(province))
+        if (order.Unit.Type == UnitType.Fleet && map.IsInland(province))
             return new OrderResult(order, OrderOutcome.Void,
                 $"Fleet cannot be built in inland province '{baseCode}'.");
 
-        if (order.Unit.Type == UnitType.Army && _map.IsSea(province))
+        if (order.Unit.Type == UnitType.Army && map.IsSea(province))
             return new OrderResult(order, OrderOutcome.Void,
                 $"Army cannot be built in sea province '{baseCode}'.");
 
-        if (_map.IsShut(province))
+        if (map.IsShut(province))
             return new OrderResult(order, OrderOutcome.Void,
                 $"Province '{baseCode}' is impassable.");
 

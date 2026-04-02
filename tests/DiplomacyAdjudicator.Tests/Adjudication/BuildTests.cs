@@ -13,7 +13,7 @@ public class BuildTests
 {
     private static readonly MapGraph Map = MapGraph.LoadStandard();
 
-    private static BuildAdjudicator Adjudicator => new(Map);
+    private static BuildAdjudicator Adjudicator => new();
 
     // Helper: Austria controls 4 SCs (via, bud, tri + one extra), has 3 units
     // — VIE is unoccupied so it can build there.
@@ -30,7 +30,7 @@ public class BuildTests
             [Power.Austria] = [new Province("vie"), new Province("bud"),
                                new Province("tri"), new Province("ser")]
         };
-        return new BuildAdjudicationRequest(units, supplyCenters, extraOrders.ToList());
+        return new BuildAdjudicationRequest(Map, units, supplyCenters, extraOrders.ToList());
     }
 
     // Helper: Austria controls 2 SCs (bud, tri), has 3 units — must disband 1.
@@ -46,7 +46,7 @@ public class BuildTests
         {
             [Power.Austria] = [new Province("bud"), new Province("tri")]
         };
-        return new BuildAdjudicationRequest(units, supplyCenters, extraOrders.ToList());
+        return new BuildAdjudicationRequest(Map, units, supplyCenters, extraOrders.ToList());
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class BuildTests
         // Actually — just test that A NTH is void because NTH is not a home SC, not coastal home.
         // Let's construct the edge case via England trying to build in a sea province:
         var buildUnit = new Unit(UnitType.Army, Power.England, new Province("nth"));
-        var request = new BuildAdjudicationRequest(units, supplyCenters,
+        var request = new BuildAdjudicationRequest(Map, units, supplyCenters,
             [new BuildOrder(buildUnit)]);
 
         var result = Adjudicator.Adjudicate(request);
@@ -199,7 +199,7 @@ public class BuildTests
             [Power.Austria] = [new Province("vie"), new Province("bud"), new Province("tri")]
         };
         var bogusOrder = new BuildOrder(new Unit(UnitType.Army, Power.Austria, new Province("vie")));
-        var request = new BuildAdjudicationRequest(units, supplyCenters, [bogusOrder]);
+        var request = new BuildAdjudicationRequest(Map, units, supplyCenters, [bogusOrder]);
 
         var result = Adjudicator.Adjudicate(request);
 

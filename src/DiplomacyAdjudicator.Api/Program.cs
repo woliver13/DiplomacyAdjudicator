@@ -1,10 +1,11 @@
 using DiplomacyAdjudicator.Core.Adjudication;
 using DiplomacyAdjudicator.Core.Map;
+using DiplomacyAdjudicator.Core.Rulesets;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddSingleton(MapGraph.LoadStandard());
+builder.Services.AddSingleton<IRulesetRegistry, RulesetRegistry>();
 builder.Services.AddSingleton<IMovementAdjudicator, MovementAdjudicator>();
 builder.Services.AddSingleton<IRetreatAdjudicator, RetreatAdjudicator>();
 builder.Services.AddSingleton<IBuildAdjudicator, BuildAdjudicator>();

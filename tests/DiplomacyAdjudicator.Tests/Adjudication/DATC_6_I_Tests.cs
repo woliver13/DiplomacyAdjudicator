@@ -11,7 +11,7 @@ namespace DiplomacyAdjudicator.Tests.Adjudication;
 public class DATC_6_I_Tests
 {
     private static readonly MapGraph Map = MapGraph.LoadStandard();
-    private static BuildAdjudicator Adjudicator => new(Map);
+    private static BuildAdjudicator Adjudicator => new();
 
     // 6.I.1 — Build in unoccupied home supply center succeeds.
     // England controls LON, EDI, LVP + one extra (4 SCs), has 3 units. Can build in LVP.
@@ -31,7 +31,7 @@ public class DATC_6_I_Tests
         };
         var unit = new Unit(UnitType.Army, Power.England, new Province("lvp"));
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, [new BuildOrder(unit)]));
+            new BuildAdjudicationRequest(Map, units, scs, [new BuildOrder(unit)]));
 
         Assert.Equal(OrderOutcome.Success, result.OrderResults[0].Outcome);
         Assert.Equal(4, result.ResultingUnits.Count);
@@ -55,7 +55,7 @@ public class DATC_6_I_Tests
         // Try to build in LON which is occupied
         var unit = new Unit(UnitType.Army, Power.England, new Province("lon"));
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, [new BuildOrder(unit)]));
+            new BuildAdjudicationRequest(Map, units, scs, [new BuildOrder(unit)]));
 
         Assert.Equal(OrderOutcome.Void, result.OrderResults[0].Outcome);
         Assert.Equal(2, result.ResultingUnits.Count);
@@ -77,7 +77,7 @@ public class DATC_6_I_Tests
         };
         var unit = new Unit(UnitType.Army, Power.England, new Province("hol"));
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, [new BuildOrder(unit)]));
+            new BuildAdjudicationRequest(Map, units, scs, [new BuildOrder(unit)]));
 
         Assert.Equal(OrderOutcome.Void, result.OrderResults[0].Outcome);
     }
@@ -98,7 +98,7 @@ public class DATC_6_I_Tests
         };
         var unit = new Unit(UnitType.Fleet, Power.Germany, new Province("mun"));
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, [new BuildOrder(unit)]));
+            new BuildAdjudicationRequest(Map, units, scs, [new BuildOrder(unit)]));
 
         Assert.Equal(OrderOutcome.Void, result.OrderResults[0].Outcome);
     }
@@ -116,7 +116,7 @@ public class DATC_6_I_Tests
             [Power.England] = [new Province("lon"), new Province("edi")]
         };
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, [new WaiveOrder(Power.England)]));
+            new BuildAdjudicationRequest(Map, units, scs, [new WaiveOrder(Power.England)]));
 
         Assert.Equal(OrderOutcome.Success, result.OrderResults[0].Outcome);
         Assert.Single(result.ResultingUnits); // no unit added
@@ -138,7 +138,7 @@ public class DATC_6_I_Tests
         };
         var disband = new DisbandOrder(new Unit(UnitType.Army, Power.Germany, new Province("mun")));
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, [disband]));
+            new BuildAdjudicationRequest(Map, units, scs, [disband]));
 
         Assert.Equal(OrderOutcome.Success, result.OrderResults[0].Outcome);
         Assert.Equal(2, result.ResultingUnits.Count);
@@ -165,7 +165,7 @@ public class DATC_6_I_Tests
         };
         // No disband orders submitted
         var result = Adjudicator.Adjudicate(
-            new BuildAdjudicationRequest(units, scs, []));
+            new BuildAdjudicationRequest(Map, units, scs, []));
 
         // 3 units, 1 SC → must disband 2. Auto-disband: ber, kie (alphabetical).
         Assert.Single(result.ResultingUnits);

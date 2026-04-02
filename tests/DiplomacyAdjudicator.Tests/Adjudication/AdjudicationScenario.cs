@@ -64,8 +64,9 @@ internal sealed class AdjudicationScenario
                 orders.Add(new HoldOrder(unit));
         }
 
-        var adjudicator = new MovementAdjudicator(_map);
+        var adjudicator = new MovementAdjudicator();
         var request = new MovementAdjudicationRequest(
+            _map,
             _units,
             orders,
             new Dictionary<Power, IReadOnlyList<Province>>());

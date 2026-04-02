@@ -52,6 +52,30 @@ public sealed class MapGraph
     }
 
     /// <summary>
+    /// Loads the 1971 edition map. Identical to the standard map except that
+    /// armies in TUN and NAP are directly adjacent (no fleet convoy required),
+    /// reflecting the adjacency printed in older editions.
+    /// </summary>
+    public static MapGraph Load1971()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        const string resourceName = "DiplomacyAdjudicator.Core.Data.standard_map.json";
+
+        using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException(
+                $"Embedded resource '{resourceName}' not found.");
+
+        var data = JsonSerializer.Deserialize<MapData>(stream, JsonOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize standard_map.json.");
+
+        // 1971 patch: TUN ↔ NAP are mutually army-adjacent
+        data.Provinces["tun"].ArmyAdjacencies?.Add("nap");
+        data.Provinces["nap"].ArmyAdjacencies?.Add("tun");
+
+        return new MapGraph(data);
+    }
+
+    /// <summary>
     /// Returns true if the province code is known (including coast variants).
     /// </summary>
     public bool IsValidProvince(string code)

@@ -11,15 +11,12 @@ namespace DiplomacyAdjudicator.Core.Adjudication;
 /// </summary>
 public sealed class MovementAdjudicator : IMovementAdjudicator
 {
-    private readonly MapGraph _map;
-
-    public MovementAdjudicator(MapGraph map) => _map = map;
-
     public MovementAdjudicationResult Adjudicate(MovementAdjudicationRequest request)
     {
-        var orders = NormalizeOrders(request.Units, request.Orders);
+        var map    = request.Map;
+        var orders = NormalizeOrders(map, request.Units, request.Orders);
 
-        var resolver = new MovementResolver(_map, request.Units, orders);
+        var resolver = new MovementResolver(map, request.Units, orders);
         var resolved = resolver.ResolveAll();
 
         // Units indexed by base province code for dislodged-unit lookup
@@ -87,7 +84,7 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
 
             var attackedFrom = move.Unit.Province;
             var retreatOptions = ComputeRetreatOptions(
-                displaced, attackedFrom, occupiedAfterMovement, standoffProvinces);
+                map, displaced, attackedFrom, occupiedAfterMovement, standoffProvinces);
 
             dislodgedUnits.Add(new DislodgedUnit(displaced, attackedFrom, retreatOptions));
         }
@@ -104,7 +101,7 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
     // Order normalisation
     // -------------------------------------------------------------------------
 
-    private List<Order> NormalizeOrders(IReadOnlyList<Unit> units, IReadOnlyList<Order> providedOrders)
+    private static List<Order> NormalizeOrders(MapGraph map, IReadOnlyList<Unit> units, IReadOnlyList<Order> providedOrders)
     {
         var normalized = new List<Order>();
         var orderedProvinceBases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -116,7 +113,7 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
             if (order is MoveOrder move)
             {
                 // Resolve bicoastal destinations (auto-detect coast for fleets, strip coast for armies)
-                var resolved = _map.ResolveDestination(move.Unit.Province, move.Destination, move.Unit.Type);
+                var resolved = map.ResolveDestination(move.Unit.Province, move.Destination, move.Unit.Type);
                 // If resolved differs (coast detected or normalised), use the resolved province.
                 // If null (ambiguous or unreachable), keep original — the resolver will fail it.
                 normalized.Add(resolved is not null && resolved != move.Destination
@@ -144,7 +141,8 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
     // Retreat option computation
     // -------------------------------------------------------------------------
 
-    private List<Province> ComputeRetreatOptions(
+    private static List<Province> ComputeRetreatOptions(
+        MapGraph map,
         Unit unit,
         Province attackedFrom,
         HashSet<string> occupiedAfterMovement,
@@ -152,7 +150,7 @@ public sealed class MovementAdjudicator : IMovementAdjudicator
     {
         var attackedFromBase = MapGraph.BaseCode(attackedFrom.Code);
 
-        return _map.GetNeighbors(unit.Province, unit.Type)
+        return map.GetNeighbors(unit.Province, unit.Type)
             .Where(p =>
             {
                 var baseCode = MapGraph.BaseCode(p.Code);

@@ -2,6 +2,7 @@ using DiplomacyAdjudicator.Core.Adjudication;
 using DiplomacyAdjudicator.Core.Domain;
 using DiplomacyAdjudicator.Core.Map;
 using DiplomacyAdjudicator.Core.Parsing;
+using DiplomacyAdjudicator.Core.Rulesets;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DiplomacyAdjudicator.Api.Controllers;
@@ -12,10 +13,8 @@ public sealed class AdjudicationController(
     IMovementAdjudicator movement,
     IRetreatAdjudicator retreat,
     IBuildAdjudicator build,
-    MapGraph map) : ControllerBase
+    IRulesetRegistry rulesets) : ControllerBase
 {
-    private readonly OrderParser _parser = new(map);
-
     // -------------------------------------------------------------------------
     // POST /adjudicate/movement
     // -------------------------------------------------------------------------
@@ -23,11 +22,17 @@ public sealed class AdjudicationController(
     [HttpPost("movement")]
     public IActionResult Movement([FromBody] MovementRequest req)
     {
-        var units   = req.Units.Select(ToUnit).ToList();
-        var orders  = req.Orders.Select(o => _parser.Parse(ToUnit(o), o.OrderText)).ToList();
-        var scs     = ToSupplyCenters(req.SupplyCenters);
+        var ruleset = req.Ruleset ?? "standard_2000";
+        if (!rulesets.IsKnown(ruleset))
+            return BadRequest(new { error = $"Unknown ruleset '{ruleset}'.", supportedRulesets = rulesets.SupportedRulesets });
 
-        var result = movement.Adjudicate(new MovementAdjudicationRequest(units, orders, scs));
+        var map    = rulesets.GetMap(ruleset);
+        var parser = new OrderParser(map);
+        var units  = req.Units.Select(ToUnit).ToList();
+        var orders = req.Orders.Select(o => parser.Parse(ToUnit(o), o.OrderText)).ToList();
+        var scs    = ToSupplyCenters(req.SupplyCenters);
+
+        var result = movement.Adjudicate(new MovementAdjudicationRequest(map, units, orders, scs));
 
         return Ok(new MovementResponse(
             result.OrderResults.Select(r => new OrderResultResponse(
@@ -48,13 +53,20 @@ public sealed class AdjudicationController(
     [HttpPost("retreat")]
     public IActionResult Retreat([FromBody] RetreatRequest req)
     {
+        var ruleset = req.Ruleset ?? "standard_2000";
+        if (!rulesets.IsKnown(ruleset))
+            return BadRequest(new { error = $"Unknown ruleset '{ruleset}'.", supportedRulesets = rulesets.SupportedRulesets });
+
+        var map    = rulesets.GetMap(ruleset);
+        var parser = new OrderParser(map);
+
         var dislodged = req.DislodgedUnits.Select(d => new DislodgedUnit(
             ToUnit(d.Unit),
             new Province(d.AttackedFrom),
             d.RetreatOptions.Select(p => new Province(p)).ToList())).ToList();
 
         var retreatOrders = req.RetreatOrders
-            .Select(o => _parser.Parse(ToUnit(o), o.OrderText))
+            .Select(o => parser.Parse(ToUnit(o), o.OrderText))
             .OfType<RetreatOrder>()
             .ToList();
 
@@ -76,11 +88,17 @@ public sealed class AdjudicationController(
     [HttpPost("build")]
     public IActionResult Build([FromBody] BuildRequest req)
     {
+        var ruleset = req.Ruleset ?? "standard_2000";
+        if (!rulesets.IsKnown(ruleset))
+            return BadRequest(new { error = $"Unknown ruleset '{ruleset}'.", supportedRulesets = rulesets.SupportedRulesets });
+
+        var map    = rulesets.GetMap(ruleset);
+        var parser = new OrderParser(map);
         var units  = req.Units.Select(ToUnit).ToList();
         var scs    = ToSupplyCenters(req.SupplyCenters);
-        var orders = req.BuildOrders.Select(o => _parser.Parse(ToUnit(o), o.OrderText)).ToList();
+        var orders = req.BuildOrders.Select(o => parser.Parse(ToUnit(o), o.OrderText)).ToList();
 
-        var result = build.Adjudicate(new BuildAdjudicationRequest(units, scs, orders));
+        var result = build.Adjudicate(new BuildAdjudicationRequest(map, units, scs, orders));
 
         return Ok(new BuildResponse(
             result.OrderResults.Select(r => new OrderResultResponse(
@@ -132,15 +150,18 @@ public record DislodgedUnitRequest(
     IReadOnlyList<string> RetreatOptions);
 
 public record MovementRequest(
+    string? Ruleset,
     IReadOnlyList<UnitRequest> Units,
     IReadOnlyList<OrderRequest> Orders,
     Dictionary<string, IReadOnlyList<string>> SupplyCenters);
 
 public record RetreatRequest(
+    string? Ruleset,
     IReadOnlyList<DislodgedUnitRequest> DislodgedUnits,
     IReadOnlyList<OrderRequest> RetreatOrders);
 
 public record BuildRequest(
+    string? Ruleset,
     IReadOnlyList<UnitRequest> Units,
     Dictionary<string, IReadOnlyList<string>> SupplyCenters,
     IReadOnlyList<OrderRequest> BuildOrders);
