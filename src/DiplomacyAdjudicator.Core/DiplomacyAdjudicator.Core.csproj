@@ -4,6 +4,24 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet package metadata -->
+    <PackageId>DiplomacyAdjudicator.Core</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>woliver13</Authors>
+    <Description>A DATC-compliant adjudication engine for the Diplomacy board game (standard ruleset). Implements Kruijswijk's algorithm for movement resolution. Supports multiple ruleset editions. Usable as a standalone .NET library or via the companion ASP.NET Core API.</Description>
+    <PackageTags>diplomacy;adjudicator;board-game;datc;kruijswijk</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/woliver13/DiplomacyAdjudicator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/woliver13/DiplomacyAdjudicator.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- XML docs and symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Suppress: missing XML comment on public member (documented types have summaries; not all do) -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

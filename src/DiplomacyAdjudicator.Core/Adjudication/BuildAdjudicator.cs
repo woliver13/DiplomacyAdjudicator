@@ -8,8 +8,8 @@ namespace DiplomacyAdjudicator.Core.Adjudication;
 ///
 /// For each power:
 ///   adjustment = SC count − unit count
-///   > 0  →  may build up to that many units in unoccupied home SCs
-///   < 0  →  must disband exactly |adjustment| units
+///   &gt; 0  →  may build up to that many units in unoccupied home SCs
+///   &lt; 0  →  must disband exactly |adjustment| units
 ///   = 0  →  no action required
 ///
 /// Build validation:
