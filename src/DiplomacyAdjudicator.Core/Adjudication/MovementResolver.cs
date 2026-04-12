@@ -24,6 +24,8 @@ internal sealed class MovementResolver
     private readonly MapGraph _map;
     private readonly IReadOnlyDictionary<Province, Unit> _units;
     private readonly IReadOnlyDictionary<Province, Order> _orders;
+    // Convoy orders extracted once per adjudication; stable for the lifetime of this resolver.
+    private readonly IReadOnlyList<ConvoyOrder> _convoyOrders;
 
     // Resolution cache
     private readonly Dictionary<Order, bool> _resolved = new();
@@ -40,6 +42,7 @@ internal sealed class MovementResolver
         _map = map;
         _units = units.ToDictionary(u => u.Province);
         _orders = orders.ToDictionary(o => o.Unit.Province);
+        _convoyOrders = _orders.Values.OfType<ConvoyOrder>().ToList();
     }
 
     // -------------------------------------------------------------------------
@@ -150,9 +153,8 @@ internal sealed class MovementResolver
 
         // Hold strength = 1 + successful support-holds
         var baseCode = Normalise(province.Code);
-        return 1 + _orders.Values
-            .OfType<SupportHoldOrder>()
-            .Count(s => Normalise(s.SupportedProvince.Code) == baseCode && Resolve(s));
+        return 1 + CountSupports<SupportHoldOrder>(
+            s => Normalise(s.SupportedProvince.Code) == baseCode);
     }
 
     private int AttackStrength(MoveOrder move)
@@ -165,16 +167,10 @@ internal sealed class MovementResolver
         var defender = _units.Values.FirstOrDefault(u =>
             Normalise(u.Province.Code) == destBase);
 
-        int count = 1;
-        foreach (var s in _orders.Values.OfType<SupportMoveOrder>())
-        {
-            if (s.SupportedOrigin != move.Unit.Province) continue;
-            if (s.SupportedDestination != move.Destination) continue;
-            if (!Resolve(s)) continue;
-            if (defender is not null && s.Unit.Power == defender.Power) continue;
-            count++;
-        }
-        return count;
+        return 1 + CountSupports<SupportMoveOrder>(s =>
+            s.SupportedOrigin == move.Unit.Province
+            && s.SupportedDestination == move.Destination
+            && (defender is null || s.Unit.Power != defender.Power));
     }
 
     private int DefendStrength(MoveOrder move)
@@ -183,11 +179,9 @@ internal sealed class MovementResolver
         bool convoy = !direct && move.Unit.Type == UnitType.Army && HasConvoyPath(move);
         if (!direct && !convoy) return 0;
 
-        return 1 + _orders.Values
-            .OfType<SupportMoveOrder>()
-            .Count(s => s.SupportedOrigin == move.Unit.Province
-                     && s.SupportedDestination == move.Destination
-                     && Resolve(s));
+        return 1 + CountSupports<SupportMoveOrder>(s =>
+            s.SupportedOrigin == move.Unit.Province
+            && s.SupportedDestination == move.Destination);
     }
 
     private int PreventStrength(MoveOrder move)
@@ -214,12 +208,17 @@ internal sealed class MovementResolver
             }
         }
 
-        return 1 + _orders.Values
-            .OfType<SupportMoveOrder>()
-            .Count(s => s.SupportedOrigin == move.Unit.Province
-                     && s.SupportedDestination == move.Destination
-                     && Resolve(s));
+        return 1 + CountSupports<SupportMoveOrder>(s =>
+            s.SupportedOrigin == move.Unit.Province
+            && s.SupportedDestination == move.Destination);
     }
+
+    /// <summary>
+    /// Counts orders of type <typeparamref name="T"/> that satisfy
+    /// <paramref name="predicate"/> and resolve successfully.
+    /// </summary>
+    private int CountSupports<T>(Func<T, bool> predicate) where T : Order
+        => _orders.Values.OfType<T>().Count(s => predicate(s) && Resolve(s));
 
     // -------------------------------------------------------------------------
     // Support adjudication
@@ -309,9 +308,9 @@ internal sealed class MovementResolver
         var originBase = Normalise(move.Unit.Province.Code);
         var destBase   = Normalise(move.Destination.Code);
 
-        // Active convoy fleets that match this army's origin→destination
-        var activeConvoys = _orders.Values
-            .OfType<ConvoyOrder>()
+        // Active convoy fleets that match this army's origin→destination.
+        // _convoyOrders is pre-built once in the constructor; we only resolve each here.
+        var activeConvoys = _convoyOrders
             .Where(c =>
                 Normalise(c.ConvoyedOrigin.Code) == originBase &&
                 Normalise(c.ConvoyedDestination.Code) == destBase &&
