@@ -26,7 +26,24 @@ public sealed class AdjudicationController(
         if (!rulesets.IsKnown(ruleset))
             return BadRequest(new { error = $"Unknown ruleset '{ruleset}'.", supportedRulesets = rulesets.SupportedRulesets });
 
-        var map    = rulesets.GetMap(ruleset);
+        var map = rulesets.GetMap(ruleset);
+
+        var invalidTypes = req.Units.Select(u => u.Type)
+            .Concat(req.Orders.Select(o => o.UnitType))
+            .Where(t => !IsKnownUnitType(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (invalidTypes.Count > 0)
+            return BadRequest(new { error = $"Unknown unit type(s): {string.Join(", ", invalidTypes)}" });
+
+        var unknownProvinces = req.Units.Select(u => u.Province)
+            .Concat(req.Orders.Select(o => o.Province))
+            .Where(p => !map.IsValidProvince(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (unknownProvinces.Count > 0)
+            return BadRequest(new { error = $"Unknown province code(s): {string.Join(", ", unknownProvinces)}" });
+
         var parser = new OrderParser(map);
         var units  = req.Units.Select(ToUnit).ToList();
         var orders = req.Orders.Select(o => parser.Parse(ToUnit(o), o.OrderText)).ToList();
@@ -57,7 +74,24 @@ public sealed class AdjudicationController(
         if (!rulesets.IsKnown(ruleset))
             return BadRequest(new { error = $"Unknown ruleset '{ruleset}'.", supportedRulesets = rulesets.SupportedRulesets });
 
-        var map    = rulesets.GetMap(ruleset);
+        var map = rulesets.GetMap(ruleset);
+
+        var invalidTypes = req.DislodgedUnits.Select(d => d.Unit.Type)
+            .Concat(req.RetreatOrders.Select(o => o.UnitType))
+            .Where(t => !IsKnownUnitType(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (invalidTypes.Count > 0)
+            return BadRequest(new { error = $"Unknown unit type(s): {string.Join(", ", invalidTypes)}" });
+
+        var unknownProvinces = req.DislodgedUnits.Select(d => d.Unit.Province)
+            .Concat(req.RetreatOrders.Select(o => o.Province))
+            .Where(p => !map.IsValidProvince(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (unknownProvinces.Count > 0)
+            return BadRequest(new { error = $"Unknown province code(s): {string.Join(", ", unknownProvinces)}" });
+
         var parser = new OrderParser(map);
 
         var dislodged = req.DislodgedUnits.Select(d => new DislodgedUnit(
@@ -92,7 +126,24 @@ public sealed class AdjudicationController(
         if (!rulesets.IsKnown(ruleset))
             return BadRequest(new { error = $"Unknown ruleset '{ruleset}'.", supportedRulesets = rulesets.SupportedRulesets });
 
-        var map    = rulesets.GetMap(ruleset);
+        var map = rulesets.GetMap(ruleset);
+
+        var invalidTypes = req.Units.Select(u => u.Type)
+            .Concat(req.BuildOrders.Select(o => o.UnitType))
+            .Where(t => !IsKnownUnitType(t))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (invalidTypes.Count > 0)
+            return BadRequest(new { error = $"Unknown unit type(s): {string.Join(", ", invalidTypes)}" });
+
+        var unknownProvinces = req.Units.Select(u => u.Province)
+            .Concat(req.BuildOrders.Select(o => o.Province))
+            .Where(p => !map.IsValidProvince(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (unknownProvinces.Count > 0)
+            return BadRequest(new { error = $"Unknown province code(s): {string.Join(", ", unknownProvinces)}" });
+
         var parser = new OrderParser(map);
         var units  = req.Units.Select(ToUnit).ToList();
         var scs    = ToSupplyCenters(req.SupplyCenters);
@@ -123,6 +174,9 @@ public sealed class AdjudicationController(
         => raw.ToDictionary(
             kv => new Power(kv.Key),
             kv => (IReadOnlyList<Province>)kv.Value.Select(p => new Province(p)).ToList());
+
+    private static bool IsKnownUnitType(string s)
+        => s.ToLowerInvariant() is "army" or "a" or "fleet" or "f";
 
     private static UnitType ParseUnitType(string s) => s.ToLowerInvariant() switch
     {

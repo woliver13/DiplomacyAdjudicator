@@ -112,6 +112,126 @@ public class AdjudicationApiTests(WebApplicationFactory<Program> factory)
     }
 
     // -------------------------------------------------------------------------
+    // Validation: null / empty collections
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task Movement_UnknownUnitType_Returns400()
+    {
+        var body = new
+        {
+            units = new[]
+            {
+                new { power = "austria", type = "zeppelin", province = "vie" }
+            },
+            orders = new[]
+            {
+                new { power = "austria", unitType = "zeppelin", province = "vie", orderText = "hold" }
+            },
+            supplyCenters = new Dictionary<string, string[]> { ["austria"] = ["vie"] }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/movement", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Retreat_UnknownUnitType_Returns400()
+    {
+        var body = new
+        {
+            dislodgedUnits = new[]
+            {
+                new
+                {
+                    unit = new { power = "austria", type = "zeppelin", province = "vie" },
+                    attackedFrom = "tyr",
+                    retreatOptions = new[] { "bud" }
+                }
+            },
+            retreatOrders = new[]
+            {
+                new { power = "austria", unitType = "zeppelin", province = "vie", orderText = "retreat bud" }
+            }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/retreat", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Build_UnknownUnitType_Returns400()
+    {
+        var body = new
+        {
+            units = new[] { new { power = "austria", type = "zeppelin", province = "bud" } },
+            supplyCenters = new Dictionary<string, string[]> { ["austria"] = ["vie", "bud"] },
+            buildOrders = new[]
+            {
+                new { power = "austria", unitType = "zeppelin", province = "vie", orderText = "build zeppelin vie" }
+            }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/build", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Retreat_UnknownProvinceCode_Returns400()
+    {
+        var body = new
+        {
+            dislodgedUnits = new[]
+            {
+                new
+                {
+                    unit = new { power = "austria", type = "army", province = "zzz" },
+                    attackedFrom = "tyr",
+                    retreatOptions = new[] { "bud" }
+                }
+            },
+            retreatOrders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "zzz", orderText = "retreat bud" }
+            }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/retreat", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Build_UnknownProvinceCode_Returns400()
+    {
+        var body = new
+        {
+            units = new[] { new { power = "austria", type = "army", province = "zzz" } },
+            supplyCenters = new Dictionary<string, string[]> { ["austria"] = ["vie", "bud"] },
+            buildOrders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "zzz", orderText = "build army zzz" }
+            }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/build", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Movement_UnknownProvinceCode_Returns400()
+    {
+        var body = new
+        {
+            units = new[]
+            {
+                new { power = "austria", type = "army", province = "zzz" }
+            },
+            orders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "zzz", orderText = "hold" }
+            },
+            supplyCenters = new Dictionary<string, string[]> { ["austria"] = ["vie"] }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/movement", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // -------------------------------------------------------------------------
     // POST /adjudicate/build
     // -------------------------------------------------------------------------
 
