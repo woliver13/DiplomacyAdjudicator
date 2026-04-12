@@ -19,7 +19,7 @@ namespace DiplomacyAdjudicator.Core.Parsing;
 /// Province codes are normalised to lowercase with "/" replaced by "_".
 /// Unknown or malformed orders fall back to HoldOrder.
 /// </summary>
-public sealed class OrderParser
+public class OrderParser : IOrderParser
 {
     private readonly MapGraph _map;
 

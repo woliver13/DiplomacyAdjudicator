@@ -13,7 +13,8 @@ public sealed class AdjudicationController(
     IMovementAdjudicator movement,
     IRetreatAdjudicator retreat,
     IBuildAdjudicator build,
-    IRulesetRegistry rulesets) : ControllerBase
+    IRulesetRegistry rulesets,
+    IOrderParserFactory parserFactory) : ControllerBase
 {
     // -------------------------------------------------------------------------
     // POST /adjudicate/movement
@@ -44,7 +45,7 @@ public sealed class AdjudicationController(
         if (unknownProvinces.Count > 0)
             return BadRequest(new { error = $"Unknown province code(s): {string.Join(", ", unknownProvinces)}" });
 
-        var parser = new OrderParser(map);
+        var parser = parserFactory.Create(map);
         var units  = req.Units.Select(ToUnit).ToList();
         var orders = req.Orders.Select(o => parser.Parse(ToUnit(o), o.OrderText)).ToList();
         var scs    = ToSupplyCenters(req.SupplyCenters);
@@ -92,7 +93,7 @@ public sealed class AdjudicationController(
         if (unknownProvinces.Count > 0)
             return BadRequest(new { error = $"Unknown province code(s): {string.Join(", ", unknownProvinces)}" });
 
-        var parser = new OrderParser(map);
+        var parser = parserFactory.Create(map);
 
         var dislodged = req.DislodgedUnits.Select(d => new DislodgedUnit(
             ToUnit(d.Unit),
@@ -144,7 +145,7 @@ public sealed class AdjudicationController(
         if (unknownProvinces.Count > 0)
             return BadRequest(new { error = $"Unknown province code(s): {string.Join(", ", unknownProvinces)}" });
 
-        var parser = new OrderParser(map);
+        var parser = parserFactory.Create(map);
         var units  = req.Units.Select(ToUnit).ToList();
         var scs    = ToSupplyCenters(req.SupplyCenters);
         var orders = req.BuildOrders.Select(o => parser.Parse(ToUnit(o), o.OrderText)).ToList();
