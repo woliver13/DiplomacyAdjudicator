@@ -1,5 +1,6 @@
 using DiplomacyAdjudicator.Core.Domain;
 using DiplomacyAdjudicator.Core.Map;
+using static DiplomacyAdjudicator.Core.Domain.ProvinceCode;
 
 namespace DiplomacyAdjudicator.Core.Adjudication;
 
@@ -18,23 +19,23 @@ public sealed class RetreatAdjudicator : IRetreatAdjudicator
     {
         // Index retreat orders by unit province (base code)
         var orderByBase = request.RetreatOrders.ToDictionary(
-            r => MapGraph.BaseCode(r.Unit.Province.Code),
-            StringComparer.OrdinalIgnoreCase);
+            r => Normalise(r.Unit.Province.Code),
+            StringComparer.Ordinal);
 
         // Detect destination conflicts: two units retreating to same province → both bounced
         var conflictedDestinations = request.RetreatOrders
-            .GroupBy(r => MapGraph.BaseCode(r.Destination.Code),
-                     StringComparer.OrdinalIgnoreCase)
+            .GroupBy(r => Normalise(r.Destination.Code),
+                     StringComparer.Ordinal)
             .Where(g => g.Count() >= 2)
             .Select(g => g.Key)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .ToHashSet(StringComparer.Ordinal);
 
         var orderResults = new List<OrderResult>();
         var survivedUnits = new List<Unit>();
 
         foreach (var dislodged in request.DislodgedUnits)
         {
-            var unitBase = MapGraph.BaseCode(dislodged.Unit.Province.Code);
+            var unitBase = Normalise(dislodged.Unit.Province.Code);
 
             if (!orderByBase.TryGetValue(unitBase, out var retreatOrder))
             {
@@ -45,12 +46,11 @@ public sealed class RetreatAdjudicator : IRetreatAdjudicator
                 continue;
             }
 
-            var destBase = MapGraph.BaseCode(retreatOrder.Destination.Code);
+            var destBase = Normalise(retreatOrder.Destination.Code);
 
             // Check that destination is in valid retreat options
             bool validDestination = dislodged.RetreatOptions
-                .Any(p => MapGraph.BaseCode(p.Code).Equals(
-                              destBase, StringComparison.OrdinalIgnoreCase));
+                .Any(p => Normalise(p.Code) == destBase);
 
             if (!validDestination)
             {

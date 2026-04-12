@@ -24,7 +24,7 @@ public sealed class MapGraph
     private MapGraph(MapData data)
     {
         _provinces = data.Provinces;
-        _supplyCenters = new HashSet<string>(data.SupplyCenters, StringComparer.OrdinalIgnoreCase);
+        _supplyCenters = new HashSet<string>(data.SupplyCenters, StringComparer.Ordinal);
         _homeCenterByProvince = [];
 
         foreach (var (power, centers) in data.HomeCenters)
@@ -97,7 +97,7 @@ public sealed class MapGraph
         if (adjacencies is null)
             return false;
 
-        return adjacencies.Contains(to.Code, StringComparer.OrdinalIgnoreCase);
+        return adjacencies.Contains(to.Code);
     }
 
     /// <summary>

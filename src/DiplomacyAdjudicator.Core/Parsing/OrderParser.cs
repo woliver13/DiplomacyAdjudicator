@@ -124,7 +124,7 @@ public sealed class OrderParser
         => new(NormaliseCode(token));
 
     private static string NormaliseCode(string token)
-        => token.Replace('/', '_');
+        => token.ToLowerInvariant().Replace('/', '_');
 
     private static Province? ExtractProvince(string[] tokens, int index)
     {

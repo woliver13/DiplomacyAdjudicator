@@ -1,5 +1,6 @@
 using DiplomacyAdjudicator.Core.Domain;
 using DiplomacyAdjudicator.Core.Map;
+using static DiplomacyAdjudicator.Core.Domain.ProvinceCode;
 
 namespace DiplomacyAdjudicator.Core.Adjudication;
 
@@ -109,8 +110,8 @@ internal sealed class MovementResolver
         {
             var orderAtDest = GetOrderAt(move.Destination);
             if (orderAtDest is MoveOrder counter &&
-                MapGraph.BaseCode(counter.Destination.Code) == MapGraph.BaseCode(move.Unit.Province.Code) &&
-                MapGraph.BaseCode(counter.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code) &&
+                Normalise(counter.Destination.Code) == Normalise(move.Unit.Province.Code) &&
+                Normalise(counter.Unit.Province.Code) == Normalise(move.Destination.Code) &&
                 _map.IsAdjacent(counter.Unit.Province, counter.Destination, counter.Unit.Type))
             {
                 if (DefendStrength(move) <= DefendStrength(counter))
@@ -124,11 +125,11 @@ internal sealed class MovementResolver
 
         // No competing move may have prevent strength >= our attack strength
         int atk = AttackStrength(move);
-        var destBase = MapGraph.BaseCode(move.Destination.Code);
+        var destBase = Normalise(move.Destination.Code);
         foreach (var other in _orders.Values.OfType<MoveOrder>())
         {
             if (other == move) continue;
-            if (!MapGraph.BaseCode(other.Destination.Code).Equals(destBase, StringComparison.OrdinalIgnoreCase)) continue;
+            if (Normalise(other.Destination.Code) != destBase) continue;
             if (PreventStrength(other) >= atk) return false;
         }
 
@@ -148,10 +149,10 @@ internal sealed class MovementResolver
         if (order is MoveOrder move && Resolve(move)) return 0;
 
         // Hold strength = 1 + successful support-holds
-        var baseCode = MapGraph.BaseCode(province.Code);
+        var baseCode = Normalise(province.Code);
         return 1 + _orders.Values
             .OfType<SupportHoldOrder>()
-            .Count(s => MapGraph.BaseCode(s.SupportedProvince.Code) == baseCode && Resolve(s));
+            .Count(s => Normalise(s.SupportedProvince.Code) == baseCode && Resolve(s));
     }
 
     private int AttackStrength(MoveOrder move)
@@ -160,9 +161,9 @@ internal sealed class MovementResolver
         bool convoy = !direct && move.Unit.Type == UnitType.Army && HasConvoyPath(move);
         if (!direct && !convoy) return 0;
 
-        var destBase = MapGraph.BaseCode(move.Destination.Code);
+        var destBase = Normalise(move.Destination.Code);
         var defender = _units.Values.FirstOrDefault(u =>
-            MapGraph.BaseCode(u.Province.Code).Equals(destBase, StringComparison.OrdinalIgnoreCase));
+            Normalise(u.Province.Code) == destBase);
 
         int count = 1;
         foreach (var s in _orders.Values.OfType<SupportMoveOrder>())
@@ -192,7 +193,7 @@ internal sealed class MovementResolver
     private int PreventStrength(MoveOrder move)
     {
         // A move to own province is always illegal — it contributes no prevent strength.
-        if (MapGraph.BaseCode(move.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code))
+        if (Normalise(move.Unit.Province.Code) == Normalise(move.Destination.Code))
             return 0;
 
         bool direct = _map.IsAdjacent(move.Unit.Province, move.Destination, move.Unit.Type);
@@ -204,8 +205,8 @@ internal sealed class MovementResolver
         {
             var orderAtDest = GetOrderAt(move.Destination);
             if (orderAtDest is MoveOrder counter &&
-                MapGraph.BaseCode(counter.Destination.Code) == MapGraph.BaseCode(move.Unit.Province.Code) &&
-                MapGraph.BaseCode(counter.Unit.Province.Code) == MapGraph.BaseCode(move.Destination.Code) &&
+                Normalise(counter.Destination.Code) == Normalise(move.Unit.Province.Code) &&
+                Normalise(counter.Unit.Province.Code) == Normalise(move.Destination.Code) &&
                 _map.IsAdjacent(counter.Unit.Province, counter.Destination, counter.Unit.Type))
             {
                 if (DefendStrength(move) <= DefendStrength(counter))
@@ -239,12 +240,12 @@ internal sealed class MovementResolver
 
         // Support is cut if any unit attacks the supporter's province (base-code match)
         // EXCEPT from the supported province itself (can't cut support directed at you)
-        var supporterBase = MapGraph.BaseCode(support.Unit.Province.Code);
+        var supporterBase = Normalise(support.Unit.Province.Code);
         foreach (var attack in _orders.Values.OfType<MoveOrder>())
         {
-            if (MapGraph.BaseCode(attack.Destination.Code) != supporterBase) continue;
-            if (MapGraph.BaseCode(attack.Unit.Province.Code) ==
-                MapGraph.BaseCode(support.SupportedProvince.Code)) continue;
+            if (Normalise(attack.Destination.Code) != supporterBase) continue;
+            if (Normalise(attack.Unit.Province.Code) ==
+                Normalise(support.SupportedProvince.Code)) continue;
             return false; // cut
         }
 
@@ -261,17 +262,17 @@ internal sealed class MovementResolver
         // Support is void if there is no matching move order at the supported origin
         var orderAtOrigin = GetOrderAt(support.SupportedOrigin);
         if (orderAtOrigin is not MoveOrder targetMove ||
-            MapGraph.BaseCode(targetMove.Destination.Code) != MapGraph.BaseCode(support.SupportedDestination.Code))
+            Normalise(targetMove.Destination.Code) != Normalise(support.SupportedDestination.Code))
             return false;
 
         // Support is cut if any unit attacks the supporter's province (base-code match)
         // EXCEPT from the move destination (can't cut support directed at you)
-        var supporterBase = MapGraph.BaseCode(support.Unit.Province.Code);
+        var supporterBase = Normalise(support.Unit.Province.Code);
         foreach (var attack in _orders.Values.OfType<MoveOrder>())
         {
-            if (MapGraph.BaseCode(attack.Destination.Code) != supporterBase) continue;
-            if (MapGraph.BaseCode(attack.Unit.Province.Code) ==
-                MapGraph.BaseCode(support.SupportedDestination.Code)) continue;
+            if (Normalise(attack.Destination.Code) != supporterBase) continue;
+            if (Normalise(attack.Unit.Province.Code) ==
+                Normalise(support.SupportedDestination.Code)) continue;
             return false; // cut
         }
 
@@ -288,11 +289,10 @@ internal sealed class MovementResolver
         if (!_map.IsSea(convoy.Unit.Province)) return false;
 
         // A convoy fails if the fleet is dislodged (any attacking move succeeds).
-        var fleetBase = MapGraph.BaseCode(convoy.Unit.Province.Code);
+        var fleetBase = Normalise(convoy.Unit.Province.Code);
         foreach (var attack in _orders.Values.OfType<MoveOrder>())
         {
-            if (!string.Equals(MapGraph.BaseCode(attack.Destination.Code), fleetBase,
-                    StringComparison.OrdinalIgnoreCase)) continue;
+            if (Normalise(attack.Destination.Code) != fleetBase) continue;
             if (Resolve(attack)) return false;
         }
         return true;
@@ -306,31 +306,29 @@ internal sealed class MovementResolver
     {
         if (move.Unit.Type != UnitType.Army) return false;
 
-        var originBase = MapGraph.BaseCode(move.Unit.Province.Code);
-        var destBase   = MapGraph.BaseCode(move.Destination.Code);
+        var originBase = Normalise(move.Unit.Province.Code);
+        var destBase   = Normalise(move.Destination.Code);
 
         // Active convoy fleets that match this army's origin→destination
         var activeConvoys = _orders.Values
             .OfType<ConvoyOrder>()
             .Where(c =>
-                string.Equals(MapGraph.BaseCode(c.ConvoyedOrigin.Code), originBase,
-                    StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(MapGraph.BaseCode(c.ConvoyedDestination.Code), destBase,
-                    StringComparison.OrdinalIgnoreCase) &&
+                Normalise(c.ConvoyedOrigin.Code) == originBase &&
+                Normalise(c.ConvoyedDestination.Code) == destBase &&
                 Resolve(c))
             .ToList();
 
         if (activeConvoys.Count == 0) return false;
 
         // BFS: start from convoy fleets adjacent to the army's origin province
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var visited = new HashSet<string>(StringComparer.Ordinal);
         var queue   = new Queue<string>();
 
         foreach (var convoy in activeConvoys)
         {
             if (!_map.IsAdjacent(convoy.Unit.Province, move.Unit.Province, UnitType.Fleet))
                 continue;
-            var code = MapGraph.BaseCode(convoy.Unit.Province.Code);
+            var code = Normalise(convoy.Unit.Province.Code);
             if (visited.Add(code)) queue.Enqueue(code);
         }
 
@@ -345,7 +343,7 @@ internal sealed class MovementResolver
             // Expand to adjacent active convoy fleets not yet visited
             foreach (var convoy in activeConvoys)
             {
-                var code = MapGraph.BaseCode(convoy.Unit.Province.Code);
+                var code = Normalise(convoy.Unit.Province.Code);
                 if (visited.Contains(code)) continue;
                 if (_map.IsAdjacent(new Province(cur), convoy.Unit.Province, UnitType.Fleet))
                 {
@@ -391,10 +389,10 @@ internal sealed class MovementResolver
         {
             if (!IsLegalMove(current)) return false;
 
-            var originBase = MapGraph.BaseCode(current.Unit.Province.Code);
+            var originBase = Normalise(current.Unit.Province.Code);
             if (visited.Contains(originBase))
                 // Completed a cycle — valid only if we returned to the start
-                return originBase == MapGraph.BaseCode(start.Unit.Province.Code);
+                return originBase == Normalise(start.Unit.Province.Code);
 
             visited.Add(originBase);
 
@@ -403,8 +401,7 @@ internal sealed class MovementResolver
             foreach (var other in _orders.Values.OfType<MoveOrder>())
             {
                 if (other == current) continue;
-                if (!MapGraph.BaseCode(other.Destination.Code)
-                        .Equals(originBase, StringComparison.OrdinalIgnoreCase)) continue;
+                if (Normalise(other.Destination.Code) != originBase) continue;
                 if (_resolved.GetValueOrDefault(other)) return false;
             }
 
@@ -427,7 +424,7 @@ internal sealed class MovementResolver
 
         while (true)
         {
-            var originBase = MapGraph.BaseCode(current.Unit.Province.Code);
+            var originBase = Normalise(current.Unit.Province.Code);
             if (visited.Contains(originBase)) break;
             visited.Add(originBase);
 
@@ -450,9 +447,9 @@ internal sealed class MovementResolver
     private Order? GetOrderAt(Province province)
     {
         if (_orders.TryGetValue(province, out var exact)) return exact;
-        var baseCode = MapGraph.BaseCode(province.Code);
+        var baseCode = Normalise(province.Code);
         foreach (var o in _orders.Values)
-            if (MapGraph.BaseCode(o.Unit.Province.Code) == baseCode) return o;
+            if (Normalise(o.Unit.Province.Code) == baseCode) return o;
         return null;
     }
 
@@ -462,9 +459,9 @@ internal sealed class MovementResolver
     private bool HasUnitAt(Province province)
     {
         if (_units.ContainsKey(province)) return true;
-        var baseCode = MapGraph.BaseCode(province.Code);
+        var baseCode = Normalise(province.Code);
         foreach (var p in _units.Keys)
-            if (MapGraph.BaseCode(p.Code) == baseCode) return true;
+            if (Normalise(p.Code) == baseCode) return true;
         return false;
     }
 
@@ -476,8 +473,8 @@ internal sealed class MovementResolver
     private bool CanReachProvince(Province from, Province to, UnitType unitType)
     {
         if (_map.IsAdjacent(from, to, unitType)) return true;
-        var targetBase = MapGraph.BaseCode(to.Code);
+        var targetBase = Normalise(to.Code);
         return _map.GetNeighbors(from, unitType)
-            .Any(n => MapGraph.BaseCode(n.Code).Equals(targetBase, StringComparison.OrdinalIgnoreCase));
+            .Any(n => Normalise(n.Code) == targetBase);
     }
 }

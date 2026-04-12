@@ -96,8 +96,8 @@ public sealed class AdjudicationController(
 
         var dislodged = req.DislodgedUnits.Select(d => new DislodgedUnit(
             ToUnit(d.Unit),
-            new Province(d.AttackedFrom),
-            d.RetreatOptions.Select(p => new Province(p)).ToList())).ToList();
+            new Province(d.AttackedFrom.ToLowerInvariant()),
+            d.RetreatOptions.Select(p => new Province(p.ToLowerInvariant())).ToList())).ToList();
 
         var retreatOrders = req.RetreatOrders
             .Select(o => parser.Parse(ToUnit(o), o.OrderText))
@@ -164,7 +164,7 @@ public sealed class AdjudicationController(
     // -------------------------------------------------------------------------
 
     private static Unit ToUnit(UnitRequest u)
-        => new(ParseUnitType(u.Type), new Power(u.Power), new Province(u.Province));
+        => new(ParseUnitType(u.Type), new Power(u.Power), new Province(u.Province.ToLowerInvariant().Replace('/', '_')));
 
     private static UnitResponse FromUnit(Unit u)
         => new(u.Power.Name, u.Type.ToString().ToLowerInvariant(), u.Province.Code);
@@ -173,7 +173,7 @@ public sealed class AdjudicationController(
         Dictionary<string, IReadOnlyList<string>> raw)
         => raw.ToDictionary(
             kv => new Power(kv.Key),
-            kv => (IReadOnlyList<Province>)kv.Value.Select(p => new Province(p)).ToList());
+            kv => (IReadOnlyList<Province>)kv.Value.Select(p => new Province(p.ToLowerInvariant())).ToList());
 
     private static bool IsKnownUnitType(string s)
         => s.ToLowerInvariant() is "army" or "a" or "fleet" or "f";

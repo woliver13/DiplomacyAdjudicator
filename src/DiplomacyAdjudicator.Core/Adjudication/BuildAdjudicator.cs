@@ -1,5 +1,6 @@
 using DiplomacyAdjudicator.Core.Domain;
 using DiplomacyAdjudicator.Core.Map;
+using static DiplomacyAdjudicator.Core.Domain.ProvinceCode;
 
 namespace DiplomacyAdjudicator.Core.Adjudication;
 
@@ -39,8 +40,8 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
 
         // Track occupied province base codes (for build validity)
         var occupiedBases = request.Units
-            .Select(u => MapGraph.BaseCode(u.Province.Code))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .Select(u => Normalise(u.Province.Code))
+            .ToHashSet(StringComparer.Ordinal);
 
         // Compute adjustments per power
         var scCounts = request.SupplyCenters.ToDictionary(
@@ -100,7 +101,7 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
 
             var candidates = resultingUnits
                 .Where(u => u.Power == power)
-                .OrderBy(u => u.Province.Code, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(u => u.Province.Code, StringComparer.Ordinal)
                 .Take(remaining)
                 .ToList();
 
@@ -129,7 +130,7 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
     {
         var power = order.Unit.Power;
         var province = order.Unit.Province;
-        var baseCode = MapGraph.BaseCode(province.Code);
+        var baseCode = Normalise(province.Code);
 
         // Must have build allowance
         if (!remainingBuilds.TryGetValue(power, out int allowance) || allowance <= 0)
@@ -172,12 +173,12 @@ public sealed class BuildAdjudicator : IBuildAdjudicator
         List<Unit> resultingUnits)
     {
         var power = order.Unit.Power;
-        var baseCode = MapGraph.BaseCode(order.Unit.Province.Code);
+        var baseCode = Normalise(order.Unit.Province.Code);
 
         // Unit must exist
         var unit = resultingUnits.FirstOrDefault(u =>
             u.Power == power &&
-            MapGraph.BaseCode(u.Province.Code).Equals(baseCode, StringComparison.OrdinalIgnoreCase));
+            Normalise(u.Province.Code) == baseCode);
 
         if (unit is null)
             return new OrderResult(order, OrderOutcome.Void,
