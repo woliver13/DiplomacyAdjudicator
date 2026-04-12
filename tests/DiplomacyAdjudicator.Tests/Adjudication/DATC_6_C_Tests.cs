@@ -27,8 +27,9 @@ public class DATC_6_C_Tests
     }
 
     // 6.C.2 — Three army circular movement with an outside attack (no support).
-    // The outside attacker fails; the circular movement still succeeds.
-    // A CON→BUL (attack 1) cannot break the cycle because BUL's prevent strength (from circular) blocks it.
+    // A CON→BUL (attack/prevent strength 1) competes with A SER→BUL (cycle, attack 1)
+    // for the vacated province BUL. Equal strength → both bounced → cycle disrupted.
+    // Per DATC: outside competition at equal strength disrupts the circular movement.
     [Fact]
     public void DATC_6_C_2_CircularMovementWithOutsideAttacker()
     {
@@ -41,9 +42,9 @@ public class DATC_6_C_Tests
             .WithOrder("turkey",  "army", "rum", "move ser")
             .WithOrder("turkey",  "army", "ser", "move bul")
             .WithOrder("austria", "army", "con", "move bul")
-            .AssertOutcome("bul", OrderOutcome.Success)
-            .AssertOutcome("rum", OrderOutcome.Success)
-            .AssertOutcome("ser", OrderOutcome.Success)
+            .AssertOutcome("bul", OrderOutcome.Failure)
+            .AssertOutcome("rum", OrderOutcome.Failure)
+            .AssertOutcome("ser", OrderOutcome.Failure)
             .AssertOutcome("con", OrderOutcome.Failure)
             .Run();
     }
@@ -69,6 +70,108 @@ public class DATC_6_C_Tests
             .AssertOutcome("rum", OrderOutcome.Failure)
             .AssertOutcome("ser", OrderOutcome.Failure)
             .AssertOutcome("con", OrderOutcome.Success)
+            .Run();
+    }
+
+    // 6.C.5 — A disrupted circular movement due to dislodged convoy.
+    // Same as 6.C.4 but Italy adds F TUN supporting F NAP→ION (attack strength 2).
+    // F ION is dislodged → convoy disrupted → circular movement fails.
+    [Fact]
+    public void DATC_6_C_5_DisruptedCircularMovementDueToDislodgedConvoy()
+    {
+        new AdjudicationScenario()
+            .WithUnit("austria", "army",  "tri")
+            .WithUnit("austria", "army",  "ser")
+            .WithUnit("turkey",  "army",  "bul")
+            .WithUnit("turkey",  "fleet", "aeg")
+            .WithUnit("turkey",  "fleet", "ion")
+            .WithUnit("turkey",  "fleet", "adr")
+            .WithUnit("italy",   "fleet", "nap")
+            .WithUnit("italy",   "fleet", "tun")
+            .WithOrder("austria", "army",  "tri", "move ser")
+            .WithOrder("austria", "army",  "ser", "move bul")
+            .WithOrder("turkey",  "army",  "bul", "move tri")
+            .WithOrder("turkey",  "fleet", "aeg", "convoy army bul move tri")
+            .WithOrder("turkey",  "fleet", "ion", "convoy army bul move tri")
+            .WithOrder("turkey",  "fleet", "adr", "convoy army bul move tri")
+            .WithOrder("italy",   "fleet", "nap", "move ion")
+            .WithOrder("italy",   "fleet", "tun", "support fleet nap move ion")
+            .AssertOutcome("tri", OrderOutcome.Failure)
+            .AssertOutcome("ser", OrderOutcome.Failure)
+            .AssertOutcome("bul", OrderOutcome.Failure)
+            .AssertDislodged("ion")
+            .AssertOutcome("nap", OrderOutcome.Success)
+            .Run();
+    }
+
+    // 6.C.6 — Two armies with two convoys.
+    // England: F NTH convoys A LON→BEL. France: F ENG convoys A BEL→LON.
+    // Both armies swap positions via convoy.
+    [Fact]
+    public void DATC_6_C_6_TwoArmiesWithTwoConvoys()
+    {
+        new AdjudicationScenario()
+            .WithUnit("england", "fleet", "nth")
+            .WithUnit("england", "army",  "lon")
+            .WithUnit("france",  "fleet", "eng")
+            .WithUnit("france",  "army",  "bel")
+            .WithOrder("england", "fleet", "nth", "convoy army lon move bel")
+            .WithOrder("england", "army",  "lon", "move bel")
+            .WithOrder("france",  "fleet", "eng", "convoy army bel move lon")
+            .WithOrder("france",  "army",  "bel", "move lon")
+            .AssertOutcome("lon", OrderOutcome.Success)
+            .AssertOutcome("bel", OrderOutcome.Success)
+            .Run();
+    }
+
+    // 6.C.7 — Disrupted unit swap.
+    // Same as 6.C.6 but France also has A BUR→BEL. A LON and A BUR both compete for BEL
+    // (equal prevent strength), so neither BEL nor LON are captured — the swap fails.
+    [Fact]
+    public void DATC_6_C_7_DisruptedUnitSwap()
+    {
+        new AdjudicationScenario()
+            .WithUnit("england", "fleet", "nth")
+            .WithUnit("england", "army",  "lon")
+            .WithUnit("france",  "fleet", "eng")
+            .WithUnit("france",  "army",  "bel")
+            .WithUnit("france",  "army",  "bur")
+            .WithOrder("england", "fleet", "nth", "convoy army lon move bel")
+            .WithOrder("england", "army",  "lon", "move bel")
+            .WithOrder("france",  "fleet", "eng", "convoy army bel move lon")
+            .WithOrder("france",  "army",  "bel", "move lon")
+            .WithOrder("france",  "army",  "bur", "move bel")
+            .AssertOutcome("lon", OrderOutcome.Failure)
+            .AssertOutcome("bel", OrderOutcome.Failure)
+            .Run();
+    }
+
+    // 6.C.4 — A circular movement with attacked convoy.
+    // Austria: A TRI→SER, A SER→BUL. Turkey: A BUL→TRI via convoy (F AEG, F ION, F ADR).
+    // Italy: F NAP→ION (attacks convoy fleet but cannot dislodge it — no support).
+    // Result: ION survives; circular movement succeeds; NAP fails.
+    [Fact]
+    public void DATC_6_C_4_CircularMovementWithAttackedConvoy()
+    {
+        new AdjudicationScenario()
+            .WithUnit("austria", "army",  "tri")
+            .WithUnit("austria", "army",  "ser")
+            .WithUnit("turkey",  "army",  "bul")
+            .WithUnit("turkey",  "fleet", "aeg")
+            .WithUnit("turkey",  "fleet", "ion")
+            .WithUnit("turkey",  "fleet", "adr")
+            .WithUnit("italy",   "fleet", "nap")
+            .WithOrder("austria", "army",  "tri", "move ser")
+            .WithOrder("austria", "army",  "ser", "move bul")
+            .WithOrder("turkey",  "army",  "bul", "move tri")
+            .WithOrder("turkey",  "fleet", "aeg", "convoy army bul move tri")
+            .WithOrder("turkey",  "fleet", "ion", "convoy army bul move tri")
+            .WithOrder("turkey",  "fleet", "adr", "convoy army bul move tri")
+            .WithOrder("italy",   "fleet", "nap", "move ion")
+            .AssertOutcome("tri", OrderOutcome.Success)
+            .AssertOutcome("ser", OrderOutcome.Success)
+            .AssertOutcome("bul", OrderOutcome.Success)
+            .AssertOutcome("nap", OrderOutcome.Failure)
             .Run();
     }
 }

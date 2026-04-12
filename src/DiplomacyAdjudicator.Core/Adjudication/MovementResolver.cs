@@ -326,7 +326,9 @@ internal sealed class MovementResolver
 
         foreach (var convoy in activeConvoys)
         {
-            if (!_map.IsAdjacent(convoy.Unit.Province, move.Unit.Province, UnitType.Fleet))
+            // Use coast-insensitive adjacency so a fleet in AEG (adjacent to bul_sc)
+            // correctly reaches an army at the base province "bul".
+            if (!CanReachProvince(convoy.Unit.Province, move.Unit.Province, UnitType.Fleet))
                 continue;
             var code = Normalise(convoy.Unit.Province.Code);
             if (visited.Add(code)) queue.Enqueue(code);
@@ -403,6 +405,17 @@ internal sealed class MovementResolver
                 if (other == current) continue;
                 if (Normalise(other.Destination.Code) != originBase) continue;
                 if (_resolved.GetValueOrDefault(other)) return false;
+            }
+
+            // If any external unit competes for the *destination* of this cycle move
+            // with prevent strength >= the cycle move's attack strength, the cycle is
+            // disrupted (DATC: outside competition at equal strength blocks entry).
+            var destBase = Normalise(current.Destination.Code);
+            foreach (var other in _orders.Values.OfType<MoveOrder>())
+            {
+                if (other == current) continue;
+                if (Normalise(other.Destination.Code) != destBase) continue;
+                if (PreventStrength(other) >= AttackStrength(current)) return false;
             }
 
             var nextOrder = GetOrderAt(current.Destination);

@@ -242,6 +242,53 @@ public sealed class MapGraph
         return adjacencies.Select(c => new Province(c)).ToList();
     }
 
+    /// <summary>
+    /// Returns all home supply-centre base provinces for the given power.
+    /// </summary>
+    public IReadOnlyList<Province> GetHomeProvinces(Power power)
+        => _homeCenterByProvince
+            .Where(kvp => string.Equals(kvp.Value, power.Name, StringComparison.OrdinalIgnoreCase))
+            .Select(kvp => new Province(kvp.Key))
+            .ToList();
+
+    /// <summary>
+    /// Returns provinces reachable in one step from <paramref name="province"/> for
+    /// civil-disorder distance BFS purposes.
+    ///
+    /// For armies: union of army and fleet adjacencies so that armies may "traverse"
+    /// sea areas (each sea area counts as one step).
+    /// For fleets: fleet adjacencies only (fleets cannot cross land).
+    ///
+    /// Returned codes may include coast variants (e.g. "stp_nc"); callers that want
+    /// only base codes should normalise via <see cref="BaseCode"/>.
+    /// </summary>
+    public IReadOnlyList<Province> GetDistanceNeighbors(Province province, UnitType unitType)
+    {
+        if (!_provinces.TryGetValue(province.Code, out var data))
+            return [];
+
+        if (unitType == UnitType.Fleet)
+        {
+            var fleetAdj = data.FleetAdjacencies;
+            return fleetAdj is null ? [] : fleetAdj.Select(c => new Province(c)).ToList();
+        }
+
+        // Army: union of army and fleet adjacencies
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<Province>();
+
+        void AddAll(List<string>? list)
+        {
+            if (list is null) return;
+            foreach (var c in list)
+                if (seen.Add(c)) result.Add(new Province(c));
+        }
+
+        AddAll(data.ArmyAdjacencies);
+        AddAll(data.FleetAdjacencies);
+        return result;
+    }
+
     // Strip coast suffix to get base province code: "spa_nc" → "spa", "bul_ec" → "bul"
     private static string NormalizeToBase(string code) => BaseCode(code);
 }
