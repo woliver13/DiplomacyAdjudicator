@@ -231,6 +231,118 @@ public class AdjudicationApiTests(WebApplicationFactory<Program> factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Movement_NullBody_Returns400()
+    {
+        var response = await _client.PostAsJsonAsync<object?>("/adjudicate/movement", null);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Movement_UnknownRuleset_Returns400()
+    {
+        var body = new
+        {
+            ruleset = "nonexistent_ruleset",
+            units = new[] { new { power = "austria", type = "army", province = "vie" } },
+            orders = new[] { new { power = "austria", unitType = "army", province = "vie", orderText = "hold" } },
+            supplyCenters = new Dictionary<string, string[]> { ["austria"] = ["vie"] }
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/movement", body);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Retreat_EmptyDislodgedUnits_Returns200()
+    {
+        var body = new
+        {
+            dislodgedUnits = Array.Empty<object>(),
+            retreatOrders  = Array.Empty<object>()
+        };
+        var response = await _client.PostAsJsonAsync("/adjudicate/retreat", body);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // -------------------------------------------------------------------------
+    // End-to-end: Movement → Retreat → Build
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task FullGameCycle_MovementThenRetreatThenBuild_AllPhasesProduce200()
+    {
+        // Phase 1 — Movement: Germany (TYR, BOH) dislodges Austria (VIE)
+        var movementBody = new
+        {
+            units = new[]
+            {
+                new { power = "austria", type = "army", province = "vie" },
+                new { power = "germany", type = "army", province = "tyr" },
+                new { power = "germany", type = "army", province = "boh" },
+            },
+            orders = new[]
+            {
+                new { power = "austria",  unitType = "army", province = "vie", orderText = "hold" },
+                new { power = "germany",  unitType = "army", province = "tyr", orderText = "move vie" },
+                new { power = "germany",  unitType = "army", province = "boh", orderText = "support army tyr move vie" },
+            },
+            supplyCenters = new Dictionary<string, string[]>
+            {
+                ["austria"] = ["vie"],
+                ["germany"] = ["mun"]
+            }
+        };
+
+        var movResp = await _client.PostAsJsonAsync("/adjudicate/movement", movementBody);
+        Assert.Equal(HttpStatusCode.OK, movResp.StatusCode);
+        var movResult = await movResp.Content.ReadFromJsonAsync<MovementResponseDto>();
+        Assert.NotNull(movResult);
+        Assert.Single(movResult.DislodgedUnits);
+        var dislodged = movResult.DislodgedUnits[0];
+        Assert.Equal("vie", dislodged.Unit.Province);
+        Assert.NotEmpty(dislodged.RetreatOptions);
+
+        // Phase 2 — Retreat: Austria retreats from VIE to BUD
+        var retreatBody = new
+        {
+            dislodgedUnits = new[]
+            {
+                new
+                {
+                    unit         = new { power = dislodged.Unit.Power, type = dislodged.Unit.Type, province = dislodged.Unit.Province },
+                    attackedFrom = dislodged.AttackedFrom,
+                    retreatOptions = dislodged.RetreatOptions
+                }
+            },
+            retreatOrders = new[]
+            {
+                new { power = "austria", unitType = "army", province = "vie", orderText = $"retreat {dislodged.RetreatOptions[0]}" }
+            }
+        };
+
+        var retResp = await _client.PostAsJsonAsync("/adjudicate/retreat", retreatBody);
+        Assert.Equal(HttpStatusCode.OK, retResp.StatusCode);
+        var retResult = await retResp.Content.ReadFromJsonAsync<RetreatResponseDto>();
+        Assert.NotNull(retResult);
+        Assert.Single(retResult.SurvivedUnits);
+
+        // Phase 3 — Build: Austria has VIE (now held by Germany), so no build rights;
+        //   use a minimal valid build request (Austria waives, no units built).
+        var buildBody = new
+        {
+            units = new[] { new { power = "austria", type = "army", province = retResult.SurvivedUnits[0].Province } },
+            supplyCenters = new Dictionary<string, string[]>
+            {
+                ["austria"] = ["bud"],
+                ["germany"] = ["vie", "mun"]
+            },
+            buildOrders = Array.Empty<object>()
+        };
+
+        var buildResp = await _client.PostAsJsonAsync("/adjudicate/build", buildBody);
+        Assert.Equal(HttpStatusCode.OK, buildResp.StatusCode);
+    }
+
     // -------------------------------------------------------------------------
     // POST /adjudicate/build
     // -------------------------------------------------------------------------
