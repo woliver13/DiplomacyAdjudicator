@@ -1,8 +1,8 @@
-using DiplomacyAdjudicator.Core.Domain;
-using DiplomacyAdjudicator.Core.Map;
-using DiplomacyAdjudicator.Core.Parsing;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Parsing;
 
-namespace DiplomacyAdjudicator.Tests.Parsing;
+namespace woliver13.DiplomacyAdjudicator.Tests.Parsing;
 
 public class OrderParserTests
 {

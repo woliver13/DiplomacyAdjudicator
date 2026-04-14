@@ -1,9 +1,9 @@
-using DiplomacyAdjudicator.Core.Adjudication;
-using DiplomacyAdjudicator.Core.Domain;
-using DiplomacyAdjudicator.Core.Map;
-using DiplomacyAdjudicator.Core.Parsing;
+using woliver13.DiplomacyAdjudicator.Core.Adjudication;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Parsing;
 
-namespace DiplomacyAdjudicator.Tests.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Tests.Adjudication;
 
 /// <summary>
 /// Fluent builder for movement adjudication test scenarios.

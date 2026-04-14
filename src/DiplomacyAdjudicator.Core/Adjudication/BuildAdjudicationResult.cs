@@ -1,6 +1,6 @@
-using DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
 
-namespace DiplomacyAdjudicator.Core.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Core.Adjudication;
 
 public record BuildAdjudicationResult(
     IReadOnlyList<OrderResult> OrderResults,

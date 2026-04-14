@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>woliver13.DiplomacyAdjudicator.Core</RootNamespace>
 
     <!-- NuGet package metadata -->
     <PackageId>DiplomacyAdjudicator.Core</PackageId>

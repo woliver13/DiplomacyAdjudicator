@@ -1,4 +1,4 @@
-namespace DiplomacyAdjudicator.Core.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Core.Adjudication;
 
 public interface IMovementAdjudicator
 {

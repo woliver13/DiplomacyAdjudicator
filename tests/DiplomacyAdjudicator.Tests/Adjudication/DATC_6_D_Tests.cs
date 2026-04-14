@@ -1,7 +1,7 @@
-using DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
 using Xunit;
 
-namespace DiplomacyAdjudicator.Tests.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Tests.Adjudication;
 
 /// <summary>
 /// DATC v2.4 Section 6.D — Supports and Dislodges (selected cases)

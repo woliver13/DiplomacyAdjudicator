@@ -1,4 +1,4 @@
-namespace DiplomacyAdjudicator.Core.Domain;
+namespace woliver13.DiplomacyAdjudicator.Core.Domain;
 
 /// <summary>
 /// Centralised province-code normalisation.

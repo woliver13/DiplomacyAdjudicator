@@ -1,6 +1,6 @@
-using DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
 
-namespace DiplomacyAdjudicator.Tests.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Tests.Adjudication;
 
 /// <summary>
 /// Dedicated tests for circular-movement detection and fix-up logic

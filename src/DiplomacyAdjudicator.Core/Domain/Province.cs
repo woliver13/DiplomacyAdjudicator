@@ -1,4 +1,4 @@
-namespace DiplomacyAdjudicator.Core.Domain;
+namespace woliver13.DiplomacyAdjudicator.Core.Domain;
 
 /// <summary>
 /// A province on the Diplomacy map, identified by its canonical lowercase string code.
