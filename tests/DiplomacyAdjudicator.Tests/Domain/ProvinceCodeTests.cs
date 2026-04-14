@@ -1,6 +1,6 @@
-using DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
 
-namespace DiplomacyAdjudicator.Tests.Domain;
+namespace woliver13.DiplomacyAdjudicator.Tests.Domain;
 
 public class ProvinceCodeTests
 {

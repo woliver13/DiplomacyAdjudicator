@@ -1,7 +1,7 @@
-using DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
 using Xunit;
 
-namespace DiplomacyAdjudicator.Tests.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Tests.Adjudication;
 
 /// <summary>
 /// Targeted tests for HasConvoyPath BFS across longer fleet chains.

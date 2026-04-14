@@ -1,8 +1,8 @@
-using DiplomacyAdjudicator.Core.Domain;
-using DiplomacyAdjudicator.Core.Map;
-using static DiplomacyAdjudicator.Core.Domain.ProvinceCode;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Map;
+using static woliver13.DiplomacyAdjudicator.Core.Domain.ProvinceCode;
 
-namespace DiplomacyAdjudicator.Core.Adjudication;
+namespace woliver13.DiplomacyAdjudicator.Core.Adjudication;
 
 /// <summary>
 /// Adjudicates the retreat phase.

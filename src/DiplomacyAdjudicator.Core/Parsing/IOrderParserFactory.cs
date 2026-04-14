@@ -1,6 +1,6 @@
-using DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Map;
 
-namespace DiplomacyAdjudicator.Core.Parsing;
+namespace woliver13.DiplomacyAdjudicator.Core.Parsing;
 
 /// <summary>
 /// Creates <see cref="IOrderParser"/> instances bound to a specific map.

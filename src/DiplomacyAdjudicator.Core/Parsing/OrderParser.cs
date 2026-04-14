@@ -1,7 +1,7 @@
-using DiplomacyAdjudicator.Core.Domain;
-using DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Map;
 
-namespace DiplomacyAdjudicator.Core.Parsing;
+namespace woliver13.DiplomacyAdjudicator.Core.Parsing;
 
 /// <summary>
 /// Parses order strings into typed Order objects.

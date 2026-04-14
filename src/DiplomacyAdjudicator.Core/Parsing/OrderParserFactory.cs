@@ -1,6 +1,6 @@
-using DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Map;
 
-namespace DiplomacyAdjudicator.Core.Parsing;
+namespace woliver13.DiplomacyAdjudicator.Core.Parsing;
 
 /// <summary>
 /// Default factory — creates a standard <see cref="OrderParser"/> for the given map.

@@ -1,4 +1,4 @@
-namespace DiplomacyAdjudicator.Core.Domain;
+namespace woliver13.DiplomacyAdjudicator.Core.Domain;
 
 public enum Season { Spring, Fall }
 

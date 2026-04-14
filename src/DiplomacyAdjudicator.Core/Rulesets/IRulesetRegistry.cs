@@ -1,6 +1,6 @@
-using DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Map;
 
-namespace DiplomacyAdjudicator.Core.Rulesets;
+namespace woliver13.DiplomacyAdjudicator.Core.Rulesets;
 
 /// <summary>
 /// Resolves a ruleset identifier to the corresponding MapGraph.

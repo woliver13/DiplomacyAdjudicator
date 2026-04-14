@@ -1,8 +1,8 @@
-using DiplomacyAdjudicator.Core.Domain;
-using DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Map;
 using Xunit;
 
-namespace DiplomacyAdjudicator.Tests.Map;
+namespace woliver13.DiplomacyAdjudicator.Tests.Map;
 
 /// <summary>
 /// Tests for the standard Diplomacy map adjacency graph.

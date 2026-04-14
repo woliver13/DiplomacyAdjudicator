@@ -1,11 +1,11 @@
-using DiplomacyAdjudicator.Core.Adjudication;
-using DiplomacyAdjudicator.Core.Domain;
-using DiplomacyAdjudicator.Core.Map;
-using DiplomacyAdjudicator.Core.Parsing;
-using DiplomacyAdjudicator.Core.Rulesets;
+using woliver13.DiplomacyAdjudicator.Core.Adjudication;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Map;
+using woliver13.DiplomacyAdjudicator.Core.Parsing;
+using woliver13.DiplomacyAdjudicator.Core.Rulesets;
 using Microsoft.AspNetCore.Mvc;
 
-namespace DiplomacyAdjudicator.Api.Controllers;
+namespace woliver13.DiplomacyAdjudicator.Api.Controllers;
 
 [ApiController]
 [Route("adjudicate")]

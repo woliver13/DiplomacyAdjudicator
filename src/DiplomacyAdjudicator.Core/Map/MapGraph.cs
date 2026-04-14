@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DiplomacyAdjudicator.Core.Domain;
+using woliver13.DiplomacyAdjudicator.Core.Domain;
 
-namespace DiplomacyAdjudicator.Core.Map;
+namespace woliver13.DiplomacyAdjudicator.Core.Map;
 
 /// <summary>
 /// In-memory adjacency graph for the standard Diplomacy map.
@@ -38,7 +38,7 @@ public sealed class MapGraph
     public static MapGraph LoadStandard()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        const string resourceName = "DiplomacyAdjudicator.Core.Data.standard_map.json";
+        const string resourceName = "woliver13.DiplomacyAdjudicator.Core.Data.standard_map.json";
 
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException(
@@ -59,7 +59,7 @@ public sealed class MapGraph
     public static MapGraph Load1971()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        const string resourceName = "DiplomacyAdjudicator.Core.Data.standard_map.json";
+        const string resourceName = "woliver13.DiplomacyAdjudicator.Core.Data.standard_map.json";
 
         using var stream = assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException(

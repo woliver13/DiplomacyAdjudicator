@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace DiplomacyAdjudicator.Api.Tests;
+namespace woliver13.DiplomacyAdjudicator.Api.Tests;
 
 public class RulesetTests(WebApplicationFactory<Program> factory)
     : IClassFixture<WebApplicationFactory<Program>>

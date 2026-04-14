@@ -1,4 +1,4 @@
-namespace DiplomacyAdjudicator.Core.Map;
+namespace woliver13.DiplomacyAdjudicator.Core.Map;
 
 /// <summary>
 /// Deserialization model for standard_map.json.
